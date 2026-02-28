@@ -10,7 +10,7 @@ import type {
 } from "@/types/builder";
 import { createDefaultElement } from "@/lib/element-defaults";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { SketchCanvas } from "@/components/canvas/SketchCanvas";
+import { SmartSketchCanvas } from "@/components/canvas/SmartSketchCanvas";
 import { ElementSidebar } from "./ElementSidebar";
 import { DragDropCanvas } from "./DragDropCanvas";
 import { PropertyPanel } from "./PropertyPanel";
@@ -285,16 +285,16 @@ export function EmailBuilder() {
             <div className="mx-auto max-w-[680px]">
               <div className="mb-6 text-center">
                 <h2 className="text-xl font-bold text-gray-900">
-                  Sketch Your Email
+                  Smart Sketch Builder
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Draw your email layout on the canvas below. Use rectangles for
-                  images, wavy lines for text, small boxes for buttons, and
-                  straight lines for dividers. Then hit &quot;Convert to
-                  Email&quot; to generate your design.
+                  Draw rectangles to create sections (set column count first for
+                  multi-column layouts). Click a section and use the AI prompt
+                  to describe what goes inside — timers, banners, CTAs, text,
+                  images, and more. Every section and column has its own prompt bar.
                 </p>
               </div>
-              <SketchCanvas onConvert={handleSketchConvert} />
+              <SmartSketchCanvas onConvert={handleSketchConvert} />
             </div>
           </div>
         )}

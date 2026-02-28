@@ -185,6 +185,35 @@ export interface DetectedRegion {
   content?: string;
 }
 
+// ── Smart Sketch Regions ──
+
+export interface RegionBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type RegionRole =
+  | "header"
+  | "content"
+  | "footer"
+  | "sidebar"
+  | "hero"
+  | "custom";
+
+export interface SmartRegion {
+  id: string;
+  bounds: RegionBounds;
+  role: RegionRole;
+  label: string;
+  elements: EmailElement[];
+  subRegions: SmartRegion[];
+  prompt?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+}
+
 // ── Drag and Drop ──
 
 export interface DragItem {
