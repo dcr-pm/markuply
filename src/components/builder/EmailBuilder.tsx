@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 import type {
   BuilderMode,
@@ -9,11 +9,14 @@ import type {
   ElementType,
 } from "@/types/builder";
 import { createDefaultElement } from "@/lib/element-defaults";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { SketchCanvas } from "@/components/canvas/SketchCanvas";
 import { ElementSidebar } from "./ElementSidebar";
 import { DragDropCanvas } from "./DragDropCanvas";
 import { PropertyPanel } from "./PropertyPanel";
 import { EmailPreview } from "@/components/preview/EmailPreview";
+import { TemplateGallery } from "./TemplateGallery";
+import { Toast } from "@/components/ui/Toast";
 
 const DEFAULT_TEMPLATE: EmailTemplate = {
   id: uuid(),
@@ -29,11 +32,39 @@ const DEFAULT_TEMPLATE: EmailTemplate = {
 
 export function EmailBuilder() {
   const [mode, setMode] = useState<BuilderMode>("sketch");
+  const { value: savedTemplate, setValue: saveTemplate, loaded } =
+    useLocalStorage<EmailTemplate>("markuply-template", DEFAULT_TEMPLATE);
   const [template, setTemplate] = useState<EmailTemplate>(DEFAULT_TEMPLATE);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showGallery, setShowGallery] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [showFirstVisit, setShowFirstVisit] = useState(false);
+
+  // Load saved template on mount
+  useEffect(() => {
+    if (loaded) {
+      if (savedTemplate.elements.length > 0) {
+        setTemplate(savedTemplate);
+        setMode("builder");
+      } else {
+        setShowFirstVisit(true);
+      }
+    }
+  }, [loaded, savedTemplate]);
+
+  // Auto-save on changes (debounced)
+  useEffect(() => {
+    if (!loaded) return;
+    const timer = setTimeout(() => {
+      saveTemplate(template);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [template, loaded, saveTemplate]);
 
   const selectedElement =
     template.elements.find((el) => el.id === selectedId) || null;
+
+  const showToast = useCallback((msg: string) => setToast(msg), []);
 
   const handleAddElement = useCallback(
     (type: ElementType, index?: number) => {
@@ -115,7 +146,66 @@ export function EmailBuilder() {
   const handleSketchConvert = useCallback((t: EmailTemplate) => {
     setTemplate(t);
     setMode("builder");
+    setToast("Sketch converted to email blocks!");
   }, []);
+
+  const handleTemplateSelect = useCallback((t: EmailTemplate) => {
+    setTemplate({ ...t, id: uuid() });
+    setMode("builder");
+    setShowGallery(false);
+    setShowFirstVisit(false);
+    setToast(`Loaded "${t.name}" template`);
+  }, []);
+
+  const handleNewDesign = useCallback(() => {
+    setTemplate({ ...DEFAULT_TEMPLATE, id: uuid() });
+    setSelectedId(null);
+    setMode("sketch");
+    setToast("New design started");
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((e.target as HTMLElement).contentEditable === "true") return;
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedId && mode === "builder") {
+          e.preventDefault();
+          handleDeleteElement();
+        }
+      }
+      if (e.key === "ArrowUp" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleMoveUp();
+      }
+      if (e.key === "ArrowDown" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleMoveDown();
+      }
+      if (e.key === "d" && (e.metaKey || e.ctrlKey)) {
+        if (selectedId && mode === "builder") {
+          e.preventDefault();
+          handleDuplicateElement();
+        }
+      }
+      if (e.key === "Escape") {
+        setSelectedId(null);
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [
+    selectedId,
+    mode,
+    handleDeleteElement,
+    handleMoveUp,
+    handleMoveDown,
+    handleDuplicateElement,
+  ]);
 
   const modes: { mode: BuilderMode; label: string; icon: string }[] = [
     { mode: "sketch", label: "Sketch", icon: "✎" },
@@ -159,18 +249,31 @@ export function EmailBuilder() {
           ))}
         </div>
 
-        {/* Email settings */}
+        {/* Right actions */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowGallery(true)}
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Templates
+          </button>
+          <button
+            onClick={handleNewDesign}
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            New
+          </button>
           <input
             value={template.subject}
             onChange={(e) =>
               setTemplate((prev) => ({ ...prev, subject: e.target.value }))
             }
             placeholder="Email subject..."
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-48"
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44"
           />
           <span className="text-xs text-gray-400">
-            {template.elements.length} block{template.elements.length !== 1 && "s"}
+            {template.elements.length} block
+            {template.elements.length !== 1 && "s"}
           </span>
         </div>
       </header>
@@ -187,8 +290,8 @@ export function EmailBuilder() {
                 <p className="mt-1 text-sm text-gray-500">
                   Draw your email layout on the canvas below. Use rectangles for
                   images, wavy lines for text, small boxes for buttons, and
-                  straight lines for dividers. Then hit &quot;Convert to Email&quot; to
-                  generate your design.
+                  straight lines for dividers. Then hit &quot;Convert to
+                  Email&quot; to generate your design.
                 </p>
               </div>
               <SketchCanvas onConvert={handleSketchConvert} />
@@ -220,8 +323,72 @@ export function EmailBuilder() {
           </>
         )}
 
-        {mode === "preview" && <EmailPreview template={template} />}
+        {mode === "preview" && (
+          <EmailPreview template={template} onToast={showToast} />
+        )}
       </div>
+
+      {/* Template gallery modal */}
+      {showGallery && (
+        <TemplateGallery
+          onSelect={handleTemplateSelect}
+          onClose={() => setShowGallery(false)}
+        />
+      )}
+
+      {/* First visit overlay */}
+      {showFirstVisit && !showGallery && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
+            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
+              <span className="text-3xl">✎</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">
+              Welcome to Markuply
+            </h2>
+            <p className="mt-2 text-sm text-gray-500">
+              Create beautiful email designs by sketching on the canvas or use
+              our drag-and-drop builder with pre-built templates.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowFirstVisit(false);
+                  setMode("sketch");
+                }}
+                className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+              >
+                Start Sketching
+              </button>
+              <button
+                onClick={() => {
+                  setShowFirstVisit(false);
+                  setShowGallery(true);
+                }}
+                className="rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Browse Templates
+              </button>
+              <button
+                onClick={() => {
+                  setShowFirstVisit(false);
+                  setMode("builder");
+                }}
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Start from Scratch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notifications */}
+      <Toast
+        message={toast || ""}
+        visible={!!toast}
+        onHide={() => setToast(null)}
+      />
     </div>
   );
 }

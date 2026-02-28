@@ -6,11 +6,12 @@ import { generateEmailHtml } from "@/lib/html-generator";
 
 interface EmailPreviewProps {
   template: EmailTemplate;
+  onToast?: (msg: string) => void;
 }
 
 type ViewMode = "desktop" | "mobile";
 
-export function EmailPreview({ template }: EmailPreviewProps) {
+export function EmailPreview({ template, onToast }: EmailPreviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
   const [showCode, setShowCode] = useState(false);
 
@@ -18,6 +19,7 @@ export function EmailPreview({ template }: EmailPreviewProps) {
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(html);
+    onToast?.("HTML copied to clipboard!");
   };
 
   const handleDownload = () => {
