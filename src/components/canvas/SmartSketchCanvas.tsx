@@ -13,10 +13,21 @@ import { RegionElementEditor } from "./RegionElementEditor";
 import { SmartToolbar } from "./SmartToolbar";
 import { recognizeContent } from "@/lib/handwriting-recognizer";
 import { promptToElements } from "@/lib/prompt-to-elements";
+import type { SmartPromptResult, RegionStyleOverrides } from "@/lib/prompt-to-elements";
 import type { Stroke, Point, SketchTool } from "@/types/builder";
 
 const CANVAS_W = 600;
 const CANVAS_H = 900;
+
+function isDarkColor(hex: string): boolean {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  // Relative luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.5;
+}
 
 interface SmartSketchCanvasProps {
   onConvert: (template: EmailTemplate) => void;
@@ -108,19 +119,30 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
       const isSelected = region.id === selectedRegionId;
       const b = region.bounds;
 
-      // Region fill
-      ctx.fillStyle = isSelected ? "rgba(79, 70, 229, 0.06)" : "rgba(99, 102, 241, 0.03)";
-      ctx.fillRect(b.x, b.y, b.width, b.height);
+      // Region fill — use custom background if set
+      if (region.backgroundColor) {
+        ctx.fillStyle = region.backgroundColor;
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+        // Overlay for selection indication
+        if (isSelected) {
+          ctx.fillStyle = "rgba(79, 70, 229, 0.08)";
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+        }
+      } else {
+        ctx.fillStyle = isSelected ? "rgba(79, 70, 229, 0.06)" : "rgba(99, 102, 241, 0.03)";
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+      }
 
       // Region border
-      ctx.strokeStyle = isSelected ? "#4F46E5" : "#a5b4fc";
+      ctx.strokeStyle = region.borderColor || (isSelected ? "#4F46E5" : "#a5b4fc");
       ctx.lineWidth = isSelected ? 2.5 : 1.5;
       ctx.setLineDash(isSelected ? [] : [6, 3]);
       ctx.strokeRect(b.x, b.y, b.width, b.height);
       ctx.setLineDash([]);
 
-      // Region label
-      ctx.fillStyle = isSelected ? "#4F46E5" : "#6366f1";
+      // Region label — auto-contrast on dark backgrounds
+      const hasDarkBg = region.backgroundColor && isDarkColor(region.backgroundColor);
+      ctx.fillStyle = hasDarkBg ? "rgba(255,255,255,0.8)" : (isSelected ? "#4F46E5" : "#6366f1");
       ctx.font = "bold 11px Arial";
       ctx.fillText(
         region.label.toUpperCase(),
@@ -554,6 +576,98 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
     [],
   );
 
+  // Update region styling (background, border, etc.) from prompt results
+  const updateRegionStyle = useCallback(
+    (regionId: string, style: RegionStyleOverrides) => {
+      setRegions((prev) =>
+        prev.map((r) => {
+          if (r.id === regionId) {
+            return {
+              ...r,
+              backgroundColor: style.backgroundColor || r.backgroundColor,
+              borderColor: style.borderColor || r.borderColor,
+            };
+          }
+          const updatedSubs = r.subRegions.map((sub) =>
+            sub.id === regionId
+              ? {
+                  ...sub,
+                  backgroundColor: style.backgroundColor || sub.backgroundColor,
+                  borderColor: style.borderColor || sub.borderColor,
+                }
+              : sub,
+          );
+          return { ...r, subRegions: updatedSubs };
+        }),
+      );
+    },
+    [],
+  );
+
+  // Handle smart prompt results — including column layouts and region styling
+  const handleSmartGenerate = useCallback(
+    (regionId: string, result: SmartPromptResult) => {
+      // Apply region styling if provided
+      if (result.regionStyle) {
+        updateRegionStyle(regionId, result.regionStyle);
+      }
+
+      if (result.isColumnLayout && result.columns && result.columns.length >= 2) {
+        // Column-aware layout: find or create sub-regions
+        setRegions((prev) =>
+          prev.map((r) => {
+            if (r.id !== regionId) return r;
+
+            // If region doesn't have enough sub-regions, create them
+            let subs = [...r.subRegions];
+            const neededCols = Math.max(...result.columns!.map((c) => c.columnIndex + 1));
+
+            if (subs.length < neededCols) {
+              const colWidth = r.bounds.width / neededCols;
+              subs = [];
+              for (let i = 0; i < neededCols; i++) {
+                const existing = r.subRegions[i];
+                subs.push(
+                  existing || {
+                    id: uuid(),
+                    bounds: {
+                      x: r.bounds.x + i * colWidth,
+                      y: r.bounds.y + 24,
+                      width: colWidth,
+                      height: r.bounds.height - 24,
+                    },
+                    role: "custom" as const,
+                    label: `Col ${i + 1}`,
+                    elements: [],
+                    subRegions: [],
+                  },
+                );
+              }
+            }
+
+            // Add elements to the respective columns
+            for (const col of result.columns!) {
+              if (col.columnIndex < subs.length) {
+                subs[col.columnIndex] = {
+                  ...subs[col.columnIndex],
+                  elements: [...subs[col.columnIndex].elements, ...col.elements],
+                };
+              }
+            }
+
+            return { ...r, subRegions: subs };
+          }),
+        );
+      } else {
+        // Standard elements — add to the region
+        if (result.elements.length > 0) {
+          addElementsToRegion(regionId, result.elements);
+        }
+      }
+    },
+    [addElementsToRegion, updateRegionStyle],
+  );
+
   const deleteRegion = useCallback((regionId: string) => {
     setRegions((prev) => {
       // Try removing top-level
@@ -742,8 +856,10 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
                 <RegionPromptBar
                   regionId={region.id}
                   onGenerate={(elements) => addElementsToRegion(region.id, elements)}
+                  onSmartGenerate={(result) => handleSmartGenerate(region.id, result)}
                   existingElements={region.elements}
                   compact={region.elements.length > 0}
+                  onStyleChange={(style) => updateRegionStyle(region.id, style)}
                 />
               </div>
             </div>

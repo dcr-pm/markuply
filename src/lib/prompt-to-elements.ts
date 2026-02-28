@@ -1,13 +1,37 @@
 import { v4 as uuid } from "uuid";
-import type { EmailElement } from "@/types/builder";
+import type { EmailElement, ElementStyles } from "@/types/builder";
 
 // ── Prompt-to-Elements Engine ──
 // Converts natural language prompts into structured email elements.
-// Uses smart pattern matching locally, with optional AI API enhancement.
+// Supports rich styling directives, column-aware layouts, and creative compositions.
 
 interface PromptPattern {
   keywords: string[];
   generate: (prompt: string) => EmailElement[];
+}
+
+// ── Smart Prompt Result ──
+// Extended result type that includes region/block styling and column-aware layouts
+
+export interface RegionStyleOverrides {
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  textAlign?: "left" | "center" | "right";
+  padding?: string;
+}
+
+export interface ColumnPromptResult {
+  columnIndex: number;
+  label: string;
+  elements: EmailElement[];
+}
+
+export interface SmartPromptResult {
+  elements: EmailElement[];
+  regionStyle?: RegionStyleOverrides;
+  columns?: ColumnPromptResult[];
+  isColumnLayout: boolean;
 }
 
 const PATTERNS: PromptPattern[] = [
@@ -696,7 +720,323 @@ function inferHeadingText(prompt: string): string {
   return "Your Heading Here";
 }
 
-// ── Main entry point ──
+// ── Style Parser ──
+// Extracts styling directives from natural language prompts
+
+const COLOR_MAP: Record<string, string> = {
+  red: "#dc2626",
+  blue: "#2563eb",
+  green: "#059669",
+  purple: "#7c3aed",
+  orange: "#ea580c",
+  pink: "#ec4899",
+  yellow: "#eab308",
+  gold: "#fbbf24",
+  black: "#111827",
+  white: "#ffffff",
+  indigo: "#4F46E5",
+  gray: "#6b7280",
+  grey: "#6b7280",
+  teal: "#0d9488",
+  navy: "#1e3a5f",
+  dark: "#1f2937",
+  light: "#f9fafb",
+  slate: "#475569",
+  emerald: "#059669",
+  rose: "#f43f5e",
+  amber: "#f59e0b",
+  cyan: "#06b6d4",
+  lime: "#84cc16",
+  violet: "#8b5cf6",
+  fuchsia: "#d946ef",
+  sky: "#0ea5e9",
+};
+
+function resolveColor(name: string): string | null {
+  const lower = name.toLowerCase().trim();
+  if (lower.startsWith("#")) return lower;
+  return COLOR_MAP[lower] || null;
+}
+
+export function parseRegionStyle(prompt: string): RegionStyleOverrides {
+  const lower = prompt.toLowerCase();
+  const style: RegionStyleOverrides = {};
+
+  // Background color: "blue background", "dark bg", "bg #333", "on black", "background color red"
+  const bgPatterns = [
+    /(?:background|bg)\s+(?:color\s+)?(?:is\s+)?(?:should\s+be\s+)?(#[0-9a-fA-F]{3,8}|\w+)/i,
+    /(\w+)\s+(?:background|bg)/i,
+    /(?:on|with)\s+(?:a\s+)?(\w+)\s+(?:background|bg|backdrop)/i,
+    /make\s+(?:it|this|the\s+(?:block|section|region))\s+(\w+)/i,
+  ];
+  for (const pat of bgPatterns) {
+    const match = prompt.match(pat);
+    if (match) {
+      const c = resolveColor(match[1]);
+      if (c) { style.backgroundColor = c; break; }
+    }
+  }
+
+  // Text color: "white text", "text color blue", "text in red"
+  const textColorPatterns = [
+    /(?:text|font)\s+(?:color\s+)?(?:is\s+)?(?:should\s+be\s+)?(?:in\s+)?(#[0-9a-fA-F]{3,8}|\w+)/i,
+    /(\w+)\s+(?:text|font|lettering|copy)/i,
+  ];
+  for (const pat of textColorPatterns) {
+    const match = prompt.match(pat);
+    if (match) {
+      const c = resolveColor(match[1]);
+      if (c) { style.textColor = c; break; }
+    }
+  }
+
+  // If dark background is detected but no text color, auto-set white text
+  if (style.backgroundColor && !style.textColor) {
+    const darkColors = ["#111827", "#1f2937", "#1e3a5f", "#000000"];
+    const bgLower = style.backgroundColor.toLowerCase();
+    if (darkColors.includes(bgLower) || lower.includes("dark")) {
+      style.textColor = "#ffffff";
+    }
+  }
+
+  // Text alignment: "centered", "left aligned", "align right"
+  if (/\b(center|centered|centre)\b/i.test(lower)) {
+    style.textAlign = "center";
+  } else if (/\b(right\s*align|align\s*right|right\s*justified)\b/i.test(lower)) {
+    style.textAlign = "right";
+  } else if (/\b(left\s*align|align\s*left)\b/i.test(lower)) {
+    style.textAlign = "left";
+  }
+
+  // Padding: "lots of padding", "tight padding", "padding 20px"
+  const paddingMatch = lower.match(/padding\s+(\d+)(?:px)?/);
+  if (paddingMatch) {
+    style.padding = `${paddingMatch[1]}px`;
+  } else if (/\b(lots?\s+of\s+padding|spacious|roomy)\b/i.test(lower)) {
+    style.padding = "32px";
+  } else if (/\b(tight|compact|minimal\s+padding|no\s+padding)\b/i.test(lower)) {
+    style.padding = "4px";
+  }
+
+  return style;
+}
+
+// ── Column Layout Parser ──
+// Detects column-specific instructions: "left column X, right column Y"
+
+const COLUMN_IDENTIFIERS: Record<string, number> = {
+  "left": 0, "first": 0, "col 1": 0, "column 1": 0, "1st": 0,
+  "right": 1, "second": 1, "col 2": 1, "column 2": 1, "2nd": 1, "middle": 1,
+  "third": 2, "col 3": 2, "column 3": 2, "3rd": 2,
+  "fourth": 3, "col 4": 3, "column 4": 3, "4th": 3,
+};
+
+function parseColumnPrompt(prompt: string): ColumnPromptResult[] | null {
+  const lower = prompt.toLowerCase();
+
+  // Check for column-aware patterns
+  const hasColumnRef = /\b(left|right|first|second|third|fourth|col\s*\d|column\s*\d|1st|2nd|3rd|4th)\b/i.test(lower);
+  const hasColumnSeparator = /[,;]|\band\b|\bthen\b|[\-–—]/.test(lower);
+
+  if (!hasColumnRef || !hasColumnSeparator) return null;
+
+  const results: ColumnPromptResult[] = [];
+
+  // Strategy 1: Split by explicit column references
+  // e.g., "left column is image, right column is headline and CTA"
+  const segments = splitByColumnRefs(prompt);
+
+  if (segments.length >= 2) {
+    for (const seg of segments) {
+      const colIdx = seg.columnIndex;
+      const elements = promptToElements(seg.text);
+      if (elements.length > 0) {
+        results.push({
+          columnIndex: colIdx,
+          label: `Column ${colIdx + 1}`,
+          elements,
+        });
+      }
+    }
+  }
+
+  return results.length >= 2 ? results : null;
+}
+
+interface ColumnSegment {
+  columnIndex: number;
+  text: string;
+}
+
+function splitByColumnRefs(prompt: string): ColumnSegment[] {
+  const segments: ColumnSegment[] = [];
+  const lower = prompt.toLowerCase();
+
+  // Find all column references with their positions
+  const refs: { index: number; colIdx: number; len: number }[] = [];
+
+  for (const [key, colIdx] of Object.entries(COLUMN_IDENTIFIERS)) {
+    const regex = new RegExp(`\\b${key.replace(/\s+/g, "\\s+")}\\b`, "gi");
+    let match;
+    while ((match = regex.exec(lower)) !== null) {
+      refs.push({ index: match.index, colIdx, len: match[0].length });
+    }
+  }
+
+  // Sort by position
+  refs.sort((a, b) => a.index - b.index);
+
+  // Deduplicate (keep first ref for each column index)
+  const seen = new Set<number>();
+  const uniqueRefs = refs.filter((r) => {
+    if (seen.has(r.colIdx)) return false;
+    seen.add(r.colIdx);
+    return true;
+  });
+
+  if (uniqueRefs.length < 2) return [];
+
+  // Extract text between column refs
+  for (let i = 0; i < uniqueRefs.length; i++) {
+    const start = uniqueRefs[i].index + uniqueRefs[i].len;
+    const end = i + 1 < uniqueRefs.length ? uniqueRefs[i + 1].index : prompt.length;
+    let text = prompt.slice(start, end).trim();
+
+    // Clean leading separators and filler words
+    text = text.replace(/^[\s,;:\-–—]+/, "").replace(/^\s*(is|should\s+be|has|have|contains?|includes?|with)\s+/i, "").trim();
+    // Clean trailing separators
+    text = text.replace(/[\s,;:\-–—]+$/, "").trim();
+
+    if (text) {
+      segments.push({ columnIndex: uniqueRefs[i].colIdx, text });
+    }
+  }
+
+  return segments;
+}
+
+// ── Smart Composition Parser ──
+// Handles complex multi-element block descriptions from a single creative prompt.
+// e.g., "heading 'Sale' in red, body text explaining 20% off, green CTA button"
+
+function parseComposition(prompt: string): EmailElement[] | null {
+  const lower = prompt.toLowerCase();
+
+  // Check for composition indicators: commas separating different element types
+  const elementKeywords = [
+    "heading", "title", "headline",
+    "text", "copy", "paragraph", "body", "description",
+    "image", "photo", "picture",
+    "button", "cta",
+    "timer", "countdown",
+    "divider", "separator", "line",
+    "spacer", "space", "gap",
+  ];
+
+  // Count distinct element types mentioned
+  const mentioned = new Set<string>();
+  for (const kw of elementKeywords) {
+    if (lower.includes(kw)) mentioned.add(kw);
+  }
+
+  // Only parse as composition if 2+ different element types AND there's explicit separation
+  if (mentioned.size < 2) return null;
+
+  // Split by commas, "and", "then", "with a", "followed by"
+  const parts = prompt.split(/,\s*|\s+and\s+|\s+then\s+|\s+with\s+(?:a\s+)?|\s+followed\s+by\s+/i).filter((p) => p.trim());
+
+  if (parts.length < 2) return null;
+
+  const elements: EmailElement[] = [];
+  const regionStyle = parseRegionStyle(prompt);
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // Apply region-level style overrides to each generated element
+    const generated = promptToElements(trimmed);
+    for (const el of generated) {
+      if (regionStyle.textColor && "content" in el) {
+        el.styles.color = el.styles.color || regionStyle.textColor;
+      }
+      if (regionStyle.textAlign) {
+        el.styles.textAlign = el.styles.textAlign || regionStyle.textAlign;
+      }
+      elements.push(el);
+    }
+  }
+
+  return elements.length > 1 ? elements : null;
+}
+
+// ── Smart Prompt Entry Point ──
+// The main "smart" function that handles creative prompts with styling, columns, and composition.
+
+export function smartPromptToElements(prompt: string): SmartPromptResult {
+  const lower = prompt.toLowerCase().trim();
+  if (!lower) return { elements: [], isColumnLayout: false };
+
+  // 1. Extract region-level styling from the prompt
+  const regionStyle = parseRegionStyle(prompt);
+
+  // 2. Check for column-aware layout instructions
+  const columnResults = parseColumnPrompt(prompt);
+  if (columnResults && columnResults.length >= 2) {
+    // Apply region styling to column elements
+    for (const col of columnResults) {
+      for (const el of col.elements) {
+        applyStyleOverrides(el, regionStyle);
+      }
+    }
+    return {
+      elements: [],
+      regionStyle: Object.keys(regionStyle).length > 0 ? regionStyle : undefined,
+      columns: columnResults,
+      isColumnLayout: true,
+    };
+  }
+
+  // 3. Try complex composition parsing ("heading X, text Y, button Z")
+  const composed = parseComposition(prompt);
+  if (composed) {
+    for (const el of composed) {
+      applyStyleOverrides(el, regionStyle);
+    }
+    return {
+      elements: composed,
+      regionStyle: Object.keys(regionStyle).length > 0 ? regionStyle : undefined,
+      isColumnLayout: false,
+    };
+  }
+
+  // 4. Fall back to standard pattern matching
+  const elements = promptToElements(prompt);
+  for (const el of elements) {
+    applyStyleOverrides(el, regionStyle);
+  }
+
+  return {
+    elements,
+    regionStyle: Object.keys(regionStyle).length > 0 ? regionStyle : undefined,
+    isColumnLayout: false,
+  };
+}
+
+function applyStyleOverrides(el: EmailElement, style: RegionStyleOverrides) {
+  if (style.textColor && !el.styles.color) {
+    el.styles.color = style.textColor;
+  }
+  if (style.textAlign && !el.styles.textAlign) {
+    el.styles.textAlign = style.textAlign;
+  }
+  // For buttons, apply text color to textColor prop
+  if (style.textColor && el.type === "button" && el.textColor === "#ffffff") {
+    // Don't override button text color if region text color is set (buttons have their own scheme)
+  }
+}
+
+// ── Main entry point (original — used by composition parser and column parser) ──
 
 export function promptToElements(prompt: string): EmailElement[] {
   const lower = prompt.toLowerCase().trim();
@@ -767,4 +1107,14 @@ export const PROMPT_SUGGESTIONS: PromptSuggestion[] = [
   { label: "Spacer", prompt: "spacer 30px", icon: "↕" },
   { label: "Image", prompt: "placeholder image", icon: "▣" },
   { label: "Video", prompt: "video placeholder", icon: "▷" },
+];
+
+// ── Creative Prompt Examples (shown in enhanced prompt bar) ──
+export const CREATIVE_PROMPT_EXAMPLES: string[] = [
+  'Dark background with white centered heading "Flash Sale" and countdown timer',
+  'Left column product image, right column heading "New Arrival" with body text and Shop Now button',
+  'Blue header with logo on left and nav links on right',
+  'Red background, white text, centered heading "50% OFF" with promo code SAVE50 and CTA',
+  'Testimonial with 5-star rating, centered on light gray background',
+  'Two columns: left is timer with "Sale ends" label, right is discount code and shop now button',
 ];
