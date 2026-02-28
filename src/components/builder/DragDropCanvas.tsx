@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import type { EmailElement, ElementType } from "@/types/builder";
 import { createDefaultElement } from "@/lib/element-defaults";
 import { TextBlock } from "./elements/TextBlock";
@@ -76,21 +76,57 @@ export function DragDropCanvas({
   onAddElement,
 }: DragDropCanvasProps) {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [dragSourceIndex, setDragSourceIndex] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Use a ref for drag source index to avoid stale closure issues
+  const dragSourceRef = useRef<number | null>(null);
 
   const handleDragOver = useCallback(
     (e: React.DragEvent, index: number) => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = dragSourceIndex !== null ? "move" : "copy";
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = dragSourceRef.current !== null ? "move" : "copy";
       setDragOverIndex(index);
     },
-    [dragSourceIndex],
+    [],
+  );
+
+  const handleDragLeave = useCallback(
+    (e: React.DragEvent) => {
+      e.stopPropagation();
+      // Only clear if we're leaving the drop zone entirely (not entering a child)
+      const related = e.relatedTarget as HTMLElement;
+      if (!e.currentTarget.contains(related)) {
+        setDragOverIndex(null);
+      }
+    },
+    [],
   );
 
   const handleDrop = useCallback(
     (e: React.DragEvent, index: number) => {
       e.preventDefault();
+      e.stopPropagation();
       setDragOverIndex(null);
+
+      // Check if it's a reorder drag (from within the canvas)
+      const reorderData = e.dataTransfer.getData("application/x-canvas-reorder");
+      if (reorderData) {
+        const sourceIndex = parseInt(reorderData, 10);
+        if (!isNaN(sourceIndex) && sourceIndex !== index) {
+          const newElements = [...elements];
+          const [moved] = newElements.splice(sourceIndex, 1);
+          newElements.splice(
+            index > sourceIndex ? index - 1 : index,
+            0,
+            moved,
+          );
+          onReorderElements(newElements);
+        }
+        dragSourceRef.current = null;
+        setIsDragging(false);
+        return;
+      }
 
       // Check if it's an element from the sidebar
       const elementType = e.dataTransfer.getData("elementType") as ElementType;
@@ -98,27 +134,17 @@ export function DragDropCanvas({
         onAddElement(elementType, index);
         return;
       }
-
-      // Reorder within the canvas
-      if (dragSourceIndex !== null && dragSourceIndex !== index) {
-        const newElements = [...elements];
-        const [moved] = newElements.splice(dragSourceIndex, 1);
-        newElements.splice(
-          index > dragSourceIndex ? index - 1 : index,
-          0,
-          moved,
-        );
-        onReorderElements(newElements);
-      }
-      setDragSourceIndex(null);
     },
-    [dragSourceIndex, elements, onAddElement, onReorderElements],
+    [elements, onAddElement, onReorderElements],
   );
 
   const handleCanvasDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragOverIndex(null);
+      setIsDragging(false);
+      dragSourceRef.current = null;
+
       const elementType = e.dataTransfer.getData("elementType") as ElementType;
       if (elementType) {
         onAddElement(elementType);
@@ -132,7 +158,7 @@ export function DragDropCanvas({
       className="flex-1 overflow-y-auto bg-gray-100 p-6"
       onDragOver={(e) => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = "copy";
+        e.dataTransfer.dropEffect = dragSourceRef.current !== null ? "move" : "copy";
       }}
       onDrop={handleCanvasDrop}
       onClick={() => onSelectElement(null)}
@@ -180,37 +206,61 @@ export function DragDropCanvas({
                 </div>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div>
                 {elements.map((el, index) => (
                   <div key={el.id}>
-                    {/* Drop zone above */}
+                    {/* Drop zone above element — always has hit area */}
                     <div
                       onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, index)}
-                      className={`transition-all ${
+                      className={`transition-all rounded-lg ${
                         dragOverIndex === index
-                          ? "h-3 bg-indigo-100 border-2 border-dashed border-indigo-400 rounded-lg my-1"
-                          : "h-0"
+                          ? "h-4 bg-indigo-100 border-2 border-dashed border-indigo-400 my-1"
+                          : isDragging
+                            ? "h-3 border-2 border-transparent my-0"
+                            : "h-1"
                       }`}
                     />
 
-                    {/* Element wrapper for drag-to-reorder */}
+                    {/* Element wrapper with drag handle */}
                     <div
-                      draggable
-                      onDragStart={(e) => {
-                        e.stopPropagation();
-                        setDragSourceIndex(index);
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
-                      onDragEnd={() => {
-                        setDragSourceIndex(null);
-                        setDragOverIndex(null);
-                      }}
-                      className={`relative transition-opacity ${
-                        dragSourceIndex === index ? "opacity-30" : ""
+                      className={`group relative ${
+                        dragSourceRef.current === index ? "opacity-30" : ""
                       }`}
                       onClick={(e) => e.stopPropagation()}
                     >
+                      {/* Drag handle overlay — visible on hover */}
+                      <div
+                        draggable
+                        onDragStart={(e) => {
+                          dragSourceRef.current = index;
+                          setIsDragging(true);
+                          e.dataTransfer.setData("application/x-canvas-reorder", String(index));
+                          e.dataTransfer.effectAllowed = "move";
+                          // Set drag image
+                          if (e.currentTarget.parentElement) {
+                            e.dataTransfer.setDragImage(e.currentTarget.parentElement, 50, 20);
+                          }
+                        }}
+                        onDragEnd={() => {
+                          dragSourceRef.current = null;
+                          setIsDragging(false);
+                          setDragOverIndex(null);
+                        }}
+                        className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-6 cursor-grab items-center justify-center rounded-md bg-white/90 border border-gray-200 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity active:cursor-grabbing hover:bg-indigo-50 hover:border-indigo-300"
+                        title="Drag to reorder"
+                      >
+                        <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" className="text-gray-400">
+                          <circle cx="3" cy="2" r="1.2" />
+                          <circle cx="7" cy="2" r="1.2" />
+                          <circle cx="3" cy="7" r="1.2" />
+                          <circle cx="7" cy="7" r="1.2" />
+                          <circle cx="3" cy="12" r="1.2" />
+                          <circle cx="7" cy="12" r="1.2" />
+                        </svg>
+                      </div>
+
                       {renderElement(
                         el,
                         selectedId === el.id,
@@ -224,11 +274,14 @@ export function DragDropCanvas({
                 {/* Final drop zone */}
                 <div
                   onDragOver={(e) => handleDragOver(e, elements.length)}
+                  onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, elements.length)}
-                  className={`transition-all ${
+                  className={`transition-all rounded-lg ${
                     dragOverIndex === elements.length
-                      ? "h-3 bg-indigo-100 border-2 border-dashed border-indigo-400 rounded-lg mt-1"
-                      : "h-4"
+                      ? "h-4 bg-indigo-100 border-2 border-dashed border-indigo-400 mt-1"
+                      : isDragging
+                        ? "h-6 border-2 border-transparent mt-0"
+                        : "h-4"
                   }`}
                 />
               </div>

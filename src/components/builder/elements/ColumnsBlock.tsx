@@ -109,14 +109,14 @@ function ColumnEditor({
       {/* Existing elements in this column — with drag-and-drop */}
       {column.elements.map((el, idx) => (
         <div key={el.id}>
-          {/* Drop zone above element */}
+          {/* Drop zone above element — always has hit area */}
           <div
             onDragOver={(e) => handleColumnDragOver(e, idx)}
             onDrop={(e) => handleColumnDrop(e, idx)}
             className={`transition-all rounded ${
               dropIndex === idx
-                ? "h-1.5 bg-indigo-400/30 border border-dashed border-indigo-400 my-0.5"
-                : "h-0"
+                ? "min-h-[6px] bg-indigo-400/30 border border-dashed border-indigo-400 my-0.5"
+                : "min-h-[3px]"
             }`}
           />
           <div
@@ -178,15 +178,15 @@ function ColumnEditor({
         </div>
       ))}
 
-      {/* Final drop zone */}
+      {/* Final drop zone — always has hit area */}
       {column.elements.length > 0 && (
         <div
           onDragOver={(e) => handleColumnDragOver(e, column.elements.length)}
           onDrop={(e) => handleColumnDrop(e, column.elements.length)}
           className={`transition-all rounded ${
             dropIndex === column.elements.length
-              ? "h-1.5 bg-indigo-400/30 border border-dashed border-indigo-400 my-0.5"
-              : "h-0"
+              ? "min-h-[6px] bg-indigo-400/30 border border-dashed border-indigo-400 my-0.5"
+              : "min-h-[3px]"
           }`}
         />
       )}

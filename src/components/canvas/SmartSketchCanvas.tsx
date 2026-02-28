@@ -806,7 +806,7 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
               <div className="space-y-1">
                 {region.elements.map((el, idx) => (
                   <div key={el.id}>
-                    {/* Drop zone above this element */}
+                    {/* Drop zone above this element — always has a hit area */}
                     <div
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -815,14 +815,31 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
                         setDropTargetRegionId(region.id);
                         setDropTargetIndex(idx);
                       }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const data = e.dataTransfer.getData("application/x-region-element");
+                        if (data) {
+                          const { elementId, sourceRegionId } = JSON.parse(data);
+                          if (sourceRegionId === region.id) {
+                            const currentIdx = region.elements.findIndex((el2) => el2.id === elementId);
+                            if (currentIdx !== -1 && currentIdx !== idx) {
+                              moveElementInRegion(region.id, elementId, idx > currentIdx ? "down" : "up");
+                            }
+                          } else {
+                            moveElementBetweenRegions(elementId, sourceRegionId, region.id, idx);
+                          }
+                        }
+                        setDropTargetRegionId(null);
+                        setDropTargetIndex(null);
+                      }}
                       className={`transition-all rounded ${
                         dropTargetRegionId === region.id && dropTargetIndex === idx
-                          ? "h-2 bg-indigo-400/30 border border-dashed border-indigo-400 my-1"
-                          : "h-0"
+                          ? "min-h-[8px] bg-indigo-400/30 border border-dashed border-indigo-400 my-1"
+                          : "min-h-[4px]"
                       }`}
                     />
                     <RegionElementEditor
-                      key={el.id}
                       element={el}
                       onChange={(updated) => updateElementInRegion(region.id, updated)}
                       onDelete={() => deleteElementFromRegion(region.id, el.id)}
@@ -836,21 +853,34 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
                   </div>
                 ))}
 
-                {/* Final drop zone */}
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.dataTransfer.dropEffect = "move";
-                    setDropTargetRegionId(region.id);
-                    setDropTargetIndex(region.elements.length);
-                  }}
-                  className={`transition-all rounded ${
-                    dropTargetRegionId === region.id && dropTargetIndex === region.elements.length && region.elements.length > 0
-                      ? "h-2 bg-indigo-400/30 border border-dashed border-indigo-400 my-1"
-                      : "h-0"
-                  }`}
-                />
+                {/* Final drop zone — always has a hit area */}
+                {region.elements.length > 0 && (
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.dataTransfer.dropEffect = "move";
+                      setDropTargetRegionId(region.id);
+                      setDropTargetIndex(region.elements.length);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const data = e.dataTransfer.getData("application/x-region-element");
+                      if (data) {
+                        const { elementId, sourceRegionId } = JSON.parse(data);
+                        moveElementBetweenRegions(elementId, sourceRegionId, region.id, region.elements.length);
+                      }
+                      setDropTargetRegionId(null);
+                      setDropTargetIndex(null);
+                    }}
+                    className={`transition-all rounded ${
+                      dropTargetRegionId === region.id && dropTargetIndex === region.elements.length
+                        ? "min-h-[8px] bg-indigo-400/30 border border-dashed border-indigo-400 my-1"
+                        : "min-h-[4px]"
+                    }`}
+                  />
+                )}
 
                 {/* AI Prompt Bar — available in every region and column */}
                 <RegionPromptBar
