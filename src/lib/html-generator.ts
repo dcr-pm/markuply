@@ -13,6 +13,8 @@ import type {
   SocialElement,
   ColumnsElement,
   HtmlElement,
+  FooterElement,
+  HeaderElement,
 } from "@/types/builder";
 
 // ── Email-safe HTML Generator ──
@@ -235,6 +237,113 @@ function generateHtml(el: HtmlElement): string {
   return el.rawHtml;
 }
 
+function generateFooter(el: FooterElement): string {
+  const textColor = el.textColor || "#9ca3af";
+  const dividerColor = el.dividerColor || "#e5e7eb";
+  const bgColor = el.styles.backgroundColor || "#f9fafb";
+
+  const socialHtml = el.showSocial && el.socialLinks.length > 0
+    ? `<div style="text-align: center; padding: 0 0 16px;">
+        ${el.socialLinks.map((link) =>
+          `<a href="${link.url}" target="_blank" style="display: inline-block; margin: 0 4px; text-decoration: none;">
+            <img src="${link.icon}" alt="${link.platform}" width="24" height="24" style="display: block; border: 0;" />
+          </a>`
+        ).join("\n        ")}
+      </div>` : "";
+
+  const linksHtml = el.links.length > 0
+    ? `<p style="margin: 0 0 12px; font-size: 12px; color: ${textColor}; text-align: center;">
+        ${el.links.map((link) => `<a href="${link.url}" style="color: ${textColor}; text-decoration: underline;">${link.label}</a>`).join(" &nbsp;|&nbsp; ")}
+      </p>` : "";
+
+  const addressHtml = el.showAddress && el.companyAddress
+    ? `<p style="margin: 0 0 8px; font-size: 11px; color: ${textColor}; text-align: center; line-height: 1.5;">
+        ${el.companyName} | ${el.companyAddress}
+      </p>` : "";
+
+  const legalHtml = `<p style="margin: 0 0 8px; font-size: 11px; color: ${textColor}; text-align: center; line-height: 1.5;">
+    <a href="${el.unsubscribeUrl}" style="color: ${textColor}; text-decoration: underline;">Unsubscribe</a>
+    &nbsp;|&nbsp;
+    <a href="${el.preferencesUrl}" style="color: ${textColor}; text-decoration: underline;">Email Preferences</a>
+    &nbsp;|&nbsp;
+    <a href="${el.privacyUrl}" style="color: ${textColor}; text-decoration: underline;">Privacy Policy</a>
+    &nbsp;|&nbsp;
+    <a href="${el.termsUrl}" style="color: ${textColor}; text-decoration: underline;">Terms of Service</a>
+  </p>`;
+
+  const copyrightHtml = `<p style="margin: 8px 0 0; font-size: 10px; color: ${textColor}; text-align: center; opacity: 0.7;">
+    &copy; ${new Date().getFullYear()} ${el.companyName}. All rights reserved.
+  </p>`;
+
+  const transactionalNotice = el.variant === "transactional"
+    ? `<p style="margin: 8px 0 0; font-size: 10px; color: ${textColor}; text-align: center; opacity: 0.6;">
+        This is a transactional email related to your account activity.
+      </p>` : "";
+
+  return `
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td style="background-color: ${bgColor}; padding: 24px 20px; border-top: 1px solid ${dividerColor};">
+      ${socialHtml}
+      ${linksHtml}
+      ${addressHtml}
+      ${legalHtml}
+      ${copyrightHtml}
+      ${transactionalNotice}
+    </td>
+  </tr>
+</table>`;
+}
+
+function generateHeader(el: HeaderElement): string {
+  const bgColor = el.backgroundColor || "#ffffff";
+  const textColor = el.textColor || "#374151";
+
+  const preheaderHtml = el.preheaderText
+    ? `<p style="margin: 0 0 12px; font-size: 11px; color: #9ca3af; text-align: center;">${el.preheaderText}</p>` : "";
+
+  const logoHtml = `<img src="${el.logoSrc}" alt="${el.logoAlt}" width="${parseInt(el.logoWidth || "180")}" style="display: block; border: 0; height: auto;" />`;
+
+  const navHtml = el.navLinks.length > 0
+    ? el.navLinks.map((link) =>
+        `<a href="${link.url}" style="color: ${textColor}; font-size: 13px; text-decoration: none; margin: 0 10px;">${link.label}</a>`
+      ).join("")
+    : "";
+
+  if (el.variant === "centered" || el.variant === "logo-only") {
+    return `
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td style="background-color: ${bgColor}; padding: ${el.styles.padding || "16px 0"}; text-align: center;">
+      ${preheaderHtml}
+      <div style="text-align: center;">
+        ${logoHtml.replace('display: block', 'display: inline-block')}
+      </div>
+      ${el.variant === "centered" && navHtml ? `<div style="margin-top: 12px; text-align: center;">${navHtml}</div>` : ""}
+    </td>
+  </tr>
+</table>`;
+  }
+
+  // logo-nav and full variants
+  return `
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td style="background-color: ${bgColor}; padding: ${el.styles.padding || "16px 0"};">
+      ${preheaderHtml}
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="vertical-align: middle;">
+            ${logoHtml}
+          </td>
+          ${navHtml ? `<td style="vertical-align: middle; text-align: right;">${navHtml}</td>` : ""}
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
+
 function generateElement(el: EmailElement): string {
   const wrapperStyle = inlineStyles({
     "background-color": el.styles.backgroundColor,
@@ -279,6 +388,12 @@ function generateElement(el: EmailElement): string {
       break;
     case "html":
       inner = generateHtml(el);
+      break;
+    case "footer":
+      inner = generateFooter(el);
+      break;
+    case "header":
+      inner = generateHeader(el);
       break;
   }
 

@@ -15,13 +15,18 @@ function ColumnEditor({
   column,
   columnIndex,
   onChange,
+  allColumns,
+  onMoveElementToColumn,
 }: {
   column: ColumnConfig;
   columnIndex: number;
   onChange: (col: ColumnConfig) => void;
+  allColumns: ColumnConfig[];
+  onMoveElementToColumn: (elementId: string, fromCol: number, toCol: number, toIndex: number) => void;
 }) {
   const [prompt, setPrompt] = useState("");
   const [showPrompt, setShowPrompt] = useState(false);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
@@ -50,52 +55,141 @@ function ColumnEditor({
     onChange({ ...column, elements: newElements });
   };
 
+  const handleColumnDragOver = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDropIndex(targetIdx);
+  };
+
+  const handleColumnDrop = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDropIndex(null);
+
+    const data = e.dataTransfer.getData("application/x-column-element");
+    if (!data) return;
+
+    const { elementId, sourceColumnIndex } = JSON.parse(data);
+
+    if (sourceColumnIndex === columnIndex) {
+      // Reorder within same column
+      const currentIdx = column.elements.findIndex((el) => el.id === elementId);
+      if (currentIdx === -1 || currentIdx === targetIdx) return;
+      const newElements = [...column.elements];
+      const [moved] = newElements.splice(currentIdx, 1);
+      newElements.splice(targetIdx > currentIdx ? targetIdx - 1 : targetIdx, 0, moved);
+      onChange({ ...column, elements: newElements });
+    } else {
+      // Move between columns
+      onMoveElementToColumn(elementId, sourceColumnIndex, columnIndex, targetIdx);
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 p-2 min-h-[80px]"
+    <div
+      className="flex flex-col gap-1.5 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 p-2 min-h-[80px]"
       style={{ width: column.width }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        if (dropIndex === null) setDropIndex(column.elements.length);
+      }}
+      onDragLeave={(e) => {
+        e.stopPropagation();
+        setDropIndex(null);
+      }}
+      onDrop={(e) => handleColumnDrop(e, column.elements.length)}
     >
       <div className="text-[10px] font-semibold text-gray-400 uppercase text-center">
         Col {columnIndex + 1}
       </div>
 
-      {/* Existing elements in this column */}
+      {/* Existing elements in this column — with drag-and-drop */}
       {column.elements.map((el, idx) => (
-        <div
-          key={el.id}
-          className="group relative rounded-md border border-gray-200 bg-white p-2 text-xs"
-        >
-          <div className="flex items-center gap-1.5">
-            <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600 uppercase">
-              {el.type}
-            </span>
-            <span className="flex-1 truncate text-gray-600">
-              {getElementPreview(el)}
-            </span>
-            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={(e) => { e.stopPropagation(); handleMoveElement(el.id, "up"); }}
-                disabled={idx === 0}
-                className="rounded p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
-              >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6" /></svg>
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleMoveElement(el.id, "down"); }}
-                disabled={idx === column.elements.length - 1}
-                className="rounded p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
-              >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleDeleteElement(el.id); }}
-                className="rounded p-0.5 text-gray-400 hover:text-red-500"
-              >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-              </button>
+        <div key={el.id}>
+          {/* Drop zone above element */}
+          <div
+            onDragOver={(e) => handleColumnDragOver(e, idx)}
+            onDrop={(e) => handleColumnDrop(e, idx)}
+            className={`transition-all rounded ${
+              dropIndex === idx
+                ? "h-1.5 bg-indigo-400/30 border border-dashed border-indigo-400 my-0.5"
+                : "h-0"
+            }`}
+          />
+          <div
+            className="group relative rounded-md border border-gray-200 bg-white p-2 text-xs"
+            draggable
+            onDragStart={(e) => {
+              e.stopPropagation();
+              e.dataTransfer.setData("application/x-column-element", JSON.stringify({
+                elementId: el.id,
+                sourceColumnIndex: columnIndex,
+              }));
+              e.dataTransfer.effectAllowed = "move";
+              (e.currentTarget as HTMLElement).style.opacity = "0.4";
+            }}
+            onDragEnd={(e) => {
+              (e.currentTarget as HTMLElement).style.opacity = "1";
+              setDropIndex(null);
+            }}
+          >
+            <div className="flex items-center gap-1.5">
+              {/* Drag handle */}
+              <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0" title="Drag to reorder">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
+                  <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+                  <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+                </svg>
+              </div>
+              <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600 uppercase">
+                {el.type}
+              </span>
+              <span className="flex-1 truncate text-gray-600">
+                {getElementPreview(el)}
+              </span>
+              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleMoveElement(el.id, "up"); }}
+                  disabled={idx === 0}
+                  className="rounded p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6" /></svg>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleMoveElement(el.id, "down"); }}
+                  disabled={idx === column.elements.length - 1}
+                  className="rounded p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteElement(el.id); }}
+                  className="rounded p-0.5 text-gray-400 hover:text-red-500"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       ))}
+
+      {/* Final drop zone */}
+      {column.elements.length > 0 && (
+        <div
+          onDragOver={(e) => handleColumnDragOver(e, column.elements.length)}
+          onDrop={(e) => handleColumnDrop(e, column.elements.length)}
+          className={`transition-all rounded ${
+            dropIndex === column.elements.length
+              ? "h-1.5 bg-indigo-400/30 border border-dashed border-indigo-400 my-0.5"
+              : "h-0"
+          }`}
+        />
+      )}
 
       {/* AI Prompt bar for this column */}
       {showPrompt ? (
@@ -179,6 +273,10 @@ function getElementPreview(el: EmailElement): string {
       return el.alt || "Video";
     case "gif":
       return el.alt || "GIF";
+    case "footer":
+      return `${el.variant} footer`;
+    case "header":
+      return `${el.variant} header`;
     default:
       return el.type;
   }
@@ -188,6 +286,29 @@ export function ColumnsBlock({ element, selected, onSelect, onChange }: ColumnsB
   const handleColumnChange = (index: number, col: ColumnConfig) => {
     const newColumns = [...element.columns];
     newColumns[index] = col;
+    onChange({ ...element, columns: newColumns });
+  };
+
+  const handleMoveElementToColumn = (
+    elementId: string,
+    fromCol: number,
+    toCol: number,
+    toIndex: number,
+  ) => {
+    const newColumns = element.columns.map((col) => ({
+      ...col,
+      elements: [...col.elements],
+    }));
+
+    // Find and remove from source column
+    const sourceElements = newColumns[fromCol].elements;
+    const elIdx = sourceElements.findIndex((el) => el.id === elementId);
+    if (elIdx === -1) return;
+    const [moved] = sourceElements.splice(elIdx, 1);
+
+    // Insert into target column
+    newColumns[toCol].elements.splice(toIndex, 0, moved);
+
     onChange({ ...element, columns: newColumns });
   };
 
@@ -208,12 +329,14 @@ export function ColumnsBlock({ element, selected, onSelect, onChange }: ColumnsB
             column={col}
             columnIndex={i}
             onChange={(updated) => handleColumnChange(i, updated)}
+            allColumns={element.columns}
+            onMoveElementToColumn={handleMoveElementToColumn}
           />
         ))}
       </div>
       {selected && (
         <div className="absolute -top-3 left-2 rounded bg-indigo-600 px-2 py-0.5 text-[10px] font-medium text-white">
-          {element.columns.length}-Column Layout · AI Prompt in each column
+          {element.columns.length}-Column Layout · Drag elements between columns
         </div>
       )}
     </div>

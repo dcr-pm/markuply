@@ -465,6 +465,112 @@ function renderProperties(
         </div>
       );
 
+    case "footer":
+      return (
+        <div className="space-y-3">
+          <SelectField
+            label="Footer Variant"
+            value={element.variant}
+            options={[
+              { label: "Marketing", value: "marketing" },
+              { label: "Transactional", value: "transactional" },
+              { label: "Minimal", value: "minimal" },
+              { label: "Full", value: "full" },
+            ]}
+            onChange={(v) => onChange({ ...element, variant: v as "marketing" | "transactional" | "minimal" | "full" })}
+          />
+          <InputField
+            label="Company Name"
+            value={element.companyName}
+            onChange={(v) => onChange({ ...element, companyName: v })}
+          />
+          <InputField
+            label="Company Address"
+            value={element.companyAddress}
+            onChange={(v) => onChange({ ...element, companyAddress: v })}
+          />
+          <InputField
+            label="Unsubscribe URL"
+            value={element.unsubscribeUrl}
+            onChange={(v) => onChange({ ...element, unsubscribeUrl: v })}
+          />
+          <InputField
+            label="Preferences URL"
+            value={element.preferencesUrl}
+            onChange={(v) => onChange({ ...element, preferencesUrl: v })}
+          />
+          <InputField
+            label="Privacy Policy URL"
+            value={element.privacyUrl}
+            onChange={(v) => onChange({ ...element, privacyUrl: v })}
+          />
+          <InputField
+            label="Terms URL"
+            value={element.termsUrl}
+            onChange={(v) => onChange({ ...element, termsUrl: v })}
+          />
+          <ColorField
+            label="Text Color"
+            value={element.textColor || "#9ca3af"}
+            onChange={(v) => onChange({ ...element, textColor: v })}
+          />
+          <ColorField
+            label="Divider Color"
+            value={element.dividerColor || "#e5e7eb"}
+            onChange={(v) => onChange({ ...element, dividerColor: v })}
+          />
+          {commonStyleFields}
+        </div>
+      );
+
+    case "header":
+      return (
+        <div className="space-y-3">
+          <SelectField
+            label="Header Variant"
+            value={element.variant}
+            options={[
+              { label: "Logo + Nav", value: "logo-nav" },
+              { label: "Logo Only", value: "logo-only" },
+              { label: "Full", value: "full" },
+              { label: "Centered", value: "centered" },
+            ]}
+            onChange={(v) => onChange({ ...element, variant: v as "logo-nav" | "logo-only" | "full" | "centered" })}
+          />
+          <InputField
+            label="Logo URL"
+            value={element.logoSrc}
+            onChange={(v) => onChange({ ...element, logoSrc: v })}
+          />
+          <InputField
+            label="Logo Alt Text"
+            value={element.logoAlt}
+            onChange={(v) => onChange({ ...element, logoAlt: v })}
+          />
+          <InputField
+            label="Logo Width"
+            value={element.logoWidth || "180px"}
+            onChange={(v) => onChange({ ...element, logoWidth: v })}
+          />
+          <InputField
+            label="Preheader Text"
+            value={element.preheaderText || ""}
+            onChange={(v) => onChange({ ...element, preheaderText: v })}
+          />
+          <ColorField
+            label="Background Color"
+            value={element.backgroundColor || "#ffffff"}
+            onChange={(v) => onChange({ ...element, backgroundColor: v })}
+          />
+          <ColorField
+            label="Text Color"
+            value={element.textColor || "#374151"}
+            onChange={(v) => onChange({ ...element, textColor: v })}
+          />
+          {commonStyleFields}
+        </div>
+      );
+
     default:
       return null;
   }
@@ -507,6 +613,8 @@ export function PropertyPanel({
     social: "Social Links",
     columns: "Columns Layout",
     html: "Custom HTML",
+    footer: "Email Footer",
+    header: "Email Header",
   };
 
   return (

@@ -12,7 +12,9 @@ export type ElementType =
   | "timer"
   | "social"
   | "columns"
-  | "html";
+  | "html"
+  | "footer"
+  | "header";
 
 export interface ElementStyles {
   backgroundColor?: string;
@@ -124,6 +126,40 @@ export interface HtmlElement extends BaseElement {
   rawHtml: string;
 }
 
+export interface FooterLink {
+  label: string;
+  url: string;
+}
+
+export interface FooterElement extends BaseElement {
+  type: "footer";
+  variant: "marketing" | "transactional" | "minimal" | "full";
+  companyName: string;
+  companyAddress: string;
+  unsubscribeUrl: string;
+  preferencesUrl: string;
+  privacyUrl: string;
+  termsUrl: string;
+  links: FooterLink[];
+  socialLinks: SocialLink[];
+  showSocial: boolean;
+  showAddress: boolean;
+  textColor: string;
+  dividerColor: string;
+}
+
+export interface HeaderElement extends BaseElement {
+  type: "header";
+  variant: "logo-nav" | "logo-only" | "full" | "centered";
+  logoSrc: string;
+  logoAlt: string;
+  logoWidth: string;
+  navLinks: FooterLink[];
+  preheaderText: string;
+  backgroundColor: string;
+  textColor: string;
+}
+
 export type EmailElement =
   | TextElement
   | HeadingElement
@@ -136,7 +172,9 @@ export type EmailElement =
   | TimerElement
   | SocialElement
   | ColumnsElement
-  | HtmlElement;
+  | HtmlElement
+  | FooterElement
+  | HeaderElement;
 
 export interface EmailTemplate {
   id: string;

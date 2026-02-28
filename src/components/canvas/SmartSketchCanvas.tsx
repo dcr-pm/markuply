@@ -29,6 +29,8 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
   const [regions, setRegions] = useState<SmartRegion[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [editingElementId, setEditingElementId] = useState<string | null>(null);
+  const [dropTargetRegionId, setDropTargetRegionId] = useState<string | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [tool, setTool] = useState<SketchTool>("rectangle");
   const [color, setColor] = useState("#4F46E5");
   const [strokeWidth, setStrokeWidth] = useState(2);
@@ -493,6 +495,65 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
     [],
   );
 
+  // Cross-region drag-and-drop: move element from one region to another at a specific index
+  const moveElementBetweenRegions = useCallback(
+    (elementId: string, sourceRegionId: string, targetRegionId: string, targetIndex: number) => {
+      setRegions((prev) => {
+        // Find the element in the source
+        let movedElement: EmailElement | null = null;
+
+        // Helper to find and remove from a region
+        const removeFrom = (r: SmartRegion): SmartRegion => {
+          if (r.id === sourceRegionId) {
+            const el = r.elements.find((e) => e.id === elementId);
+            if (el) movedElement = el;
+            return { ...r, elements: r.elements.filter((e) => e.id !== elementId) };
+          }
+          return {
+            ...r,
+            subRegions: r.subRegions.map((sub) => {
+              if (sub.id === sourceRegionId) {
+                const el = sub.elements.find((e) => e.id === elementId);
+                if (el) movedElement = el;
+                return { ...sub, elements: sub.elements.filter((e) => e.id !== elementId) };
+              }
+              return sub;
+            }),
+          };
+        };
+
+        // Helper to insert into a region at index
+        const insertInto = (r: SmartRegion): SmartRegion => {
+          if (!movedElement) return r;
+          if (r.id === targetRegionId) {
+            const newElements = [...r.elements];
+            newElements.splice(targetIndex, 0, movedElement);
+            return { ...r, elements: newElements };
+          }
+          return {
+            ...r,
+            subRegions: r.subRegions.map((sub) => {
+              if (sub.id === targetRegionId && movedElement) {
+                const newElements = [...sub.elements];
+                newElements.splice(targetIndex, 0, movedElement);
+                return { ...sub, elements: newElements };
+              }
+              return sub;
+            }),
+          };
+        };
+
+        // First remove, then insert
+        let updated = prev.map(removeFrom);
+        if (movedElement) {
+          updated = updated.map(insertInto);
+        }
+        return updated;
+      });
+    },
+    [],
+  );
+
   const deleteRegion = useCallback((regionId: string) => {
     setRegions((prev) => {
       // Try removing top-level
@@ -584,25 +645,98 @@ export function SmartSketchCanvas({ onConvert }: SmartSketchCanvasProps) {
             setSelectedRegionId(region.id);
           }}
         >
-          {/* Elements inside this region */}
+          {/* Elements inside this region — with drop zones */}
           {isSelected && (
             <div
               className="absolute inset-0 overflow-y-auto p-2"
               style={{ top: isSubRegion ? 0 : 24 * scale }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = "move";
+                // If dragging over the container itself (not a specific drop zone), target end
+                if (dropTargetRegionId !== region.id || dropTargetIndex !== region.elements.length) {
+                  setDropTargetRegionId(region.id);
+                  setDropTargetIndex(region.elements.length);
+                }
+              }}
+              onDragLeave={(e) => {
+                e.stopPropagation();
+                if (dropTargetRegionId === region.id) {
+                  setDropTargetRegionId(null);
+                  setDropTargetIndex(null);
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const data = e.dataTransfer.getData("application/x-region-element");
+                if (data) {
+                  const { elementId, sourceRegionId } = JSON.parse(data);
+                  const idx = dropTargetIndex ?? region.elements.length;
+                  if (sourceRegionId === region.id) {
+                    // Same region: reorder
+                    const currentIdx = region.elements.findIndex((el) => el.id === elementId);
+                    if (currentIdx !== -1 && currentIdx !== idx) {
+                      moveElementInRegion(region.id, elementId, idx > currentIdx ? "down" : "up");
+                    }
+                  } else {
+                    // Cross-region: move
+                    moveElementBetweenRegions(elementId, sourceRegionId, region.id, idx);
+                  }
+                }
+                setDropTargetRegionId(null);
+                setDropTargetIndex(null);
+              }}
             >
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {region.elements.map((el, idx) => (
-                  <RegionElementEditor
-                    key={el.id}
-                    element={el}
-                    onChange={(updated) => updateElementInRegion(region.id, updated)}
-                    onDelete={() => deleteElementFromRegion(region.id, el.id)}
-                    onMoveUp={() => moveElementInRegion(region.id, el.id, "up")}
-                    onMoveDown={() => moveElementInRegion(region.id, el.id, "down")}
-                    isFirst={idx === 0}
-                    isLast={idx === region.elements.length - 1}
-                  />
+                  <div key={el.id}>
+                    {/* Drop zone above this element */}
+                    <div
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.dataTransfer.dropEffect = "move";
+                        setDropTargetRegionId(region.id);
+                        setDropTargetIndex(idx);
+                      }}
+                      className={`transition-all rounded ${
+                        dropTargetRegionId === region.id && dropTargetIndex === idx
+                          ? "h-2 bg-indigo-400/30 border border-dashed border-indigo-400 my-1"
+                          : "h-0"
+                      }`}
+                    />
+                    <RegionElementEditor
+                      key={el.id}
+                      element={el}
+                      onChange={(updated) => updateElementInRegion(region.id, updated)}
+                      onDelete={() => deleteElementFromRegion(region.id, el.id)}
+                      onMoveUp={() => moveElementInRegion(region.id, el.id, "up")}
+                      onMoveDown={() => moveElementInRegion(region.id, el.id, "down")}
+                      isFirst={idx === 0}
+                      isLast={idx === region.elements.length - 1}
+                      regionId={region.id}
+                      index={idx}
+                    />
+                  </div>
                 ))}
+
+                {/* Final drop zone */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = "move";
+                    setDropTargetRegionId(region.id);
+                    setDropTargetIndex(region.elements.length);
+                  }}
+                  className={`transition-all rounded ${
+                    dropTargetRegionId === region.id && dropTargetIndex === region.elements.length && region.elements.length > 0
+                      ? "h-2 bg-indigo-400/30 border border-dashed border-indigo-400 my-1"
+                      : "h-0"
+                  }`}
+                />
 
                 {/* AI Prompt Bar — available in every region and column */}
                 <RegionPromptBar

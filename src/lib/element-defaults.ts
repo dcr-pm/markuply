@@ -133,6 +133,57 @@ export const ELEMENT_PALETTE: DragItem[] = [
       styles: {},
     },
   },
+  {
+    type: "footer",
+    label: "Footer",
+    icon: "⊥",
+    defaultProps: {
+      variant: "marketing",
+      companyName: "Your Company",
+      companyAddress: "123 Main St, Suite 100, San Francisco, CA 94105",
+      unsubscribeUrl: "https://example.com/unsubscribe",
+      preferencesUrl: "https://example.com/preferences",
+      privacyUrl: "https://example.com/privacy",
+      termsUrl: "https://example.com/terms",
+      links: [
+        { label: "Website", url: "https://example.com" },
+        { label: "Help Center", url: "https://example.com/help" },
+        { label: "Contact Us", url: "https://example.com/contact" },
+      ],
+      socialLinks: [
+        { platform: "Twitter", url: "https://twitter.com", icon: "https://placehold.co/24/1DA1F2/fff?text=X" },
+        { platform: "Facebook", url: "https://facebook.com", icon: "https://placehold.co/24/1877F2/fff?text=f" },
+        { platform: "Instagram", url: "https://instagram.com", icon: "https://placehold.co/24/E4405F/fff?text=IG" },
+        { platform: "LinkedIn", url: "https://linkedin.com", icon: "https://placehold.co/24/0A66C2/fff?text=in" },
+      ],
+      showSocial: true,
+      showAddress: true,
+      textColor: "#9ca3af",
+      dividerColor: "#e5e7eb",
+      styles: { padding: "0", backgroundColor: "#f9fafb" },
+    },
+  },
+  {
+    type: "header",
+    label: "Header",
+    icon: "⊤",
+    defaultProps: {
+      variant: "logo-nav",
+      logoSrc: "https://placehold.co/180x50/f8fafc/334155?text=YOUR+LOGO",
+      logoAlt: "Company Logo",
+      logoWidth: "180px",
+      navLinks: [
+        { label: "Home", url: "https://example.com" },
+        { label: "Shop", url: "https://example.com/shop" },
+        { label: "Sale", url: "https://example.com/sale" },
+        { label: "About", url: "https://example.com/about" },
+      ],
+      preheaderText: "",
+      backgroundColor: "#ffffff",
+      textColor: "#374151",
+      styles: { padding: "16px 0" },
+    },
+  },
 ];
 
 export function createDefaultElement(type: ElementType): EmailElement {

@@ -11,6 +11,8 @@ interface RegionElementEditorProps {
   onMoveDown: () => void;
   isFirst: boolean;
   isLast: boolean;
+  regionId: string;
+  index: number;
 }
 
 const FONT_OPTIONS = [
@@ -36,6 +38,8 @@ export function RegionElementEditor({
   onMoveDown,
   isFirst,
   isLast,
+  regionId,
+  index,
 }: RegionElementEditorProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -45,6 +49,20 @@ export function RegionElementEditor({
 
   const updateProp = (key: string, value: unknown) => {
     onChange({ ...element, [key]: value } as EmailElement);
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("application/x-region-element", JSON.stringify({
+      elementId: element.id,
+      sourceRegionId: regionId,
+      sourceIndex: index,
+    }));
+    e.dataTransfer.effectAllowed = "move";
+    (e.currentTarget as HTMLElement).style.opacity = "0.4";
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).style.opacity = "1";
   };
 
   const typeLabel: Record<string, string> = {
@@ -59,12 +77,28 @@ export function RegionElementEditor({
     timer: "Timer",
     social: "Social",
     html: "HTML",
+    footer: "Footer",
+    header: "Header",
   };
 
   return (
-    <div className="rounded-lg border border-indigo-200 bg-white shadow-sm" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="rounded-lg border border-indigo-200 bg-white shadow-sm"
+      onClick={(e) => e.stopPropagation()}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       {/* Header bar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
+        {/* Drag handle */}
+        <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0" title="Drag to move">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+          </svg>
+        </div>
         <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 uppercase">
           {typeLabel[element.type] || element.type}
         </span>

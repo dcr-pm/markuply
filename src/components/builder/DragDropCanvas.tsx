@@ -15,6 +15,8 @@ import { TimerBlock } from "./elements/TimerBlock";
 import { SocialBlock } from "./elements/SocialBlock";
 import { ColumnsBlock } from "./elements/ColumnsBlock";
 import { HtmlBlock } from "./elements/HtmlBlock";
+import { FooterBlock } from "./elements/FooterBlock";
+import { HeaderBlock } from "./elements/HeaderBlock";
 
 interface DragDropCanvasProps {
   elements: EmailElement[];
@@ -58,6 +60,10 @@ function renderElement(
       return <ColumnsBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
     case "html":
       return <HtmlBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+    case "footer":
+      return <FooterBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+    case "header":
+      return <HeaderBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
   }
 }
 

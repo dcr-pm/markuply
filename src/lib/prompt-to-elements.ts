@@ -338,42 +338,134 @@ const PATTERNS: PromptPattern[] = [
     },
   },
 
-  // ── Footer ──
+  // ── Marketing Footer (full) ──
   {
-    keywords: ["footer", "unsubscribe", "bottom", "legal", "copyright"],
+    keywords: ["marketing footer", "email footer", "full footer", "standard footer"],
     generate: () => [
       {
         id: uuid(),
-        type: "divider",
-        thickness: "1px",
-        dividerColor: "#e5e7eb",
-        dividerWidth: "100%",
-        styles: { padding: "8px 0" },
-      },
-      {
-        id: uuid(),
-        type: "social",
+        type: "footer",
+        variant: "marketing" as const,
+        companyName: "Your Company",
+        companyAddress: "123 Main St, Suite 100, San Francisco, CA 94105",
+        unsubscribeUrl: "https://example.com/unsubscribe",
+        preferencesUrl: "https://example.com/preferences",
+        privacyUrl: "https://example.com/privacy",
+        termsUrl: "https://example.com/terms",
         links: [
+          { label: "Website", url: "https://example.com" },
+          { label: "Help Center", url: "https://example.com/help" },
+          { label: "Contact Us", url: "https://example.com/contact" },
+        ],
+        socialLinks: [
           { platform: "Twitter", url: "https://twitter.com", icon: "https://placehold.co/24/1DA1F2/fff?text=X" },
           { platform: "Facebook", url: "https://facebook.com", icon: "https://placehold.co/24/1877F2/fff?text=f" },
           { platform: "Instagram", url: "https://instagram.com", icon: "https://placehold.co/24/E4405F/fff?text=IG" },
+          { platform: "LinkedIn", url: "https://linkedin.com", icon: "https://placehold.co/24/0A66C2/fff?text=in" },
         ],
-        iconSize: "24px",
-        styles: { textAlign: "center", padding: "12px 0 4px" },
-      },
-      {
-        id: uuid(),
-        type: "text",
-        content: "© 2026 Your Company. All rights reserved.\nYou received this email because you signed up. Unsubscribe here.",
-        styles: {
-          fontSize: "11px",
-          color: "#9ca3af",
-          textAlign: "center",
-          padding: "4px 20px 16px",
-          lineHeight: "1.6",
-        },
+        showSocial: true,
+        showAddress: true,
+        textColor: "#9ca3af",
+        dividerColor: "#e5e7eb",
+        styles: { padding: "0", backgroundColor: "#f9fafb" },
       },
     ],
+  },
+
+  // ── Transactional Footer ──
+  {
+    keywords: ["transactional footer", "account footer", "receipt footer", "order footer"],
+    generate: () => [
+      {
+        id: uuid(),
+        type: "footer",
+        variant: "transactional" as const,
+        companyName: "Your Company",
+        companyAddress: "123 Main St, Suite 100, San Francisco, CA 94105",
+        unsubscribeUrl: "https://example.com/unsubscribe",
+        preferencesUrl: "https://example.com/preferences",
+        privacyUrl: "https://example.com/privacy",
+        termsUrl: "https://example.com/terms",
+        links: [
+          { label: "Help Center", url: "https://example.com/help" },
+          { label: "Contact Support", url: "https://example.com/support" },
+        ],
+        socialLinks: [],
+        showSocial: false,
+        showAddress: true,
+        textColor: "#9ca3af",
+        dividerColor: "#e5e7eb",
+        styles: { padding: "0", backgroundColor: "#f9fafb" },
+      },
+    ],
+  },
+
+  // ── Generic Footer (catches "footer", "unsubscribe", etc.) ──
+  {
+    keywords: ["footer", "unsubscribe", "bottom", "legal", "copyright", "privacy"],
+    generate: (prompt) => {
+      const lower = prompt.toLowerCase();
+      const isTransactional = lower.includes("transactional") || lower.includes("receipt") || lower.includes("order");
+      return [
+        {
+          id: uuid(),
+          type: "footer",
+          variant: isTransactional ? "transactional" as const : "marketing" as const,
+          companyName: "Your Company",
+          companyAddress: "123 Main St, Suite 100, San Francisco, CA 94105",
+          unsubscribeUrl: "https://example.com/unsubscribe",
+          preferencesUrl: "https://example.com/preferences",
+          privacyUrl: "https://example.com/privacy",
+          termsUrl: "https://example.com/terms",
+          links: [
+            { label: "Website", url: "https://example.com" },
+            { label: "Help Center", url: "https://example.com/help" },
+            { label: "Contact Us", url: "https://example.com/contact" },
+          ],
+          socialLinks: [
+            { platform: "Twitter", url: "https://twitter.com", icon: "https://placehold.co/24/1DA1F2/fff?text=X" },
+            { platform: "Facebook", url: "https://facebook.com", icon: "https://placehold.co/24/1877F2/fff?text=f" },
+            { platform: "Instagram", url: "https://instagram.com", icon: "https://placehold.co/24/E4405F/fff?text=IG" },
+          ],
+          showSocial: !isTransactional,
+          showAddress: true,
+          textColor: "#9ca3af",
+          dividerColor: "#e5e7eb",
+          styles: { padding: "0", backgroundColor: "#f9fafb" },
+        },
+      ];
+    },
+  },
+
+  // ── Email Header ──
+  {
+    keywords: ["email header", "header section", "header block", "logo header", "nav header"],
+    generate: (prompt) => {
+      const lower = prompt.toLowerCase();
+      const variant = lower.includes("centered") ? "centered" as const
+        : lower.includes("logo only") ? "logo-only" as const
+        : "logo-nav" as const;
+      return [
+        {
+          id: uuid(),
+          type: "header",
+          variant,
+          logoSrc: "https://placehold.co/180x50/f8fafc/334155?text=YOUR+LOGO",
+          logoAlt: "Company Logo",
+          logoWidth: "180px",
+          navLinks: [
+            { label: "Home", url: "https://example.com" },
+            { label: "Shop", url: "https://example.com/shop" },
+            { label: "Sale", url: "https://example.com/sale" },
+            { label: "About", url: "https://example.com/about" },
+          ],
+          preheaderText: "",
+          backgroundColor: "#ffffff",
+          textColor: "#374151",
+          styles: { padding: "16px 0" },
+        },
+      ];
+    },
   },
 
   // ── Heading (generic) ──
@@ -668,7 +760,9 @@ export const PROMPT_SUGGESTIONS: PromptSuggestion[] = [
   { label: "Product", prompt: 'product card "Premium Widget" $49.99', icon: "📱" },
   { label: "Testimonial", prompt: 'testimonial from "Sarah M."', icon: "💬" },
   { label: "Social Links", prompt: "social media links", icon: "@" },
-  { label: "Footer", prompt: "email footer with unsubscribe", icon: "⊥" },
+  { label: "Mktg Footer", prompt: "marketing footer with unsubscribe and social", icon: "⊥" },
+  { label: "Txn Footer", prompt: "transactional footer", icon: "⊥" },
+  { label: "Header", prompt: "email header with logo and navigation", icon: "⊤" },
   { label: "Divider", prompt: "divider line", icon: "—" },
   { label: "Spacer", prompt: "spacer 30px", icon: "↕" },
   { label: "Image", prompt: "placeholder image", icon: "▣" },
