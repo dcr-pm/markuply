@@ -150,14 +150,47 @@ export interface FooterElement extends BaseElement {
 
 export interface HeaderElement extends BaseElement {
   type: "header";
-  variant: "logo-nav" | "logo-only" | "full" | "centered";
+  variant: "logo-nav" | "logo-only" | "full" | "centered" | "minimal" | "bold" | "ecommerce";
+
+  // Logo
   logoSrc: string;
   logoAlt: string;
   logoWidth: string;
+  logoPosition: "left" | "center" | "right";
+
+  // Tagline / subtitle
+  tagline: string;
+  taglineColor: string;
+  taglineFontSize: string;
+
+  // Navigation
   navLinks: FooterLink[];
+  navPosition: "left" | "center" | "right" | "below";
+  navStyle: "text" | "pills" | "underline" | "bold";
+  navFontSize: string;
+  navColor: string;
+
+  // CTA Button
+  ctaText: string;
+  ctaUrl: string;
+  ctaColor: string;
+  ctaTextColor: string;
+  ctaBorderRadius: string;
+  showCta: boolean;
+
+  // Announcement / Top Bar
+  announcementText: string;
+  announcementBg: string;
+  announcementTextColor: string;
+  showAnnouncement: boolean;
+
+  // Preheader
   preheaderText: string;
+
+  // Styling
   backgroundColor: string;
   textColor: string;
+  borderBottom: string;
 }
 
 export type EmailElement =

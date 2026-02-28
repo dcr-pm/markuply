@@ -1,6 +1,6 @@
 "use client";
 
-import type { EmailElement } from "@/types/builder";
+import type { EmailElement, HeaderElement } from "@/types/builder";
 
 interface PropertyPanelProps {
   element: EmailElement | null;
@@ -527,47 +527,255 @@ function renderProperties(
       return (
         <div className="space-y-3">
           <SelectField
-            label="Header Variant"
+            label="Preset"
             value={element.variant}
             options={[
               { label: "Logo + Nav", value: "logo-nav" },
               { label: "Logo Only", value: "logo-only" },
-              { label: "Full", value: "full" },
               { label: "Centered", value: "centered" },
+              { label: "Full", value: "full" },
+              { label: "Minimal", value: "minimal" },
+              { label: "Bold", value: "bold" },
+              { label: "E-commerce", value: "ecommerce" },
             ]}
-            onChange={(v) => onChange({ ...element, variant: v as "logo-nav" | "logo-only" | "full" | "centered" })}
+            onChange={(v) => onChange({ ...element, variant: v as HeaderElement["variant"] })}
           />
-          <InputField
-            label="Logo URL"
-            value={element.logoSrc}
-            onChange={(v) => onChange({ ...element, logoSrc: v })}
-          />
-          <InputField
-            label="Logo Alt Text"
-            value={element.logoAlt}
-            onChange={(v) => onChange({ ...element, logoAlt: v })}
-          />
-          <InputField
-            label="Logo Width"
-            value={element.logoWidth || "180px"}
-            onChange={(v) => onChange({ ...element, logoWidth: v })}
-          />
-          <InputField
-            label="Preheader Text"
-            value={element.preheaderText || ""}
-            onChange={(v) => onChange({ ...element, preheaderText: v })}
-          />
-          <ColorField
-            label="Background Color"
-            value={element.backgroundColor || "#ffffff"}
-            onChange={(v) => onChange({ ...element, backgroundColor: v })}
-          />
-          <ColorField
-            label="Text Color"
-            value={element.textColor || "#374151"}
-            onChange={(v) => onChange({ ...element, textColor: v })}
-          />
-          {commonStyleFields}
+
+          {/* ── Announcement Bar ── */}
+          <div className="space-y-2 border-t border-gray-200 pt-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Announcement Bar</p>
+            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={element.showAnnouncement || false}
+                onChange={(e) => onChange({ ...element, showAnnouncement: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              Show announcement bar
+            </label>
+            {element.showAnnouncement && (
+              <>
+                <InputField
+                  label="Announcement Text"
+                  value={element.announcementText || ""}
+                  onChange={(v) => onChange({ ...element, announcementText: v })}
+                />
+                <ColorField
+                  label="Bar Background"
+                  value={element.announcementBg || "#4F46E5"}
+                  onChange={(v) => onChange({ ...element, announcementBg: v })}
+                />
+                <ColorField
+                  label="Bar Text Color"
+                  value={element.announcementTextColor || "#ffffff"}
+                  onChange={(v) => onChange({ ...element, announcementTextColor: v })}
+                />
+              </>
+            )}
+          </div>
+
+          {/* ── Logo ── */}
+          <div className="space-y-2 border-t border-gray-200 pt-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Logo</p>
+            <InputField
+              label="Logo URL"
+              value={element.logoSrc}
+              onChange={(v) => onChange({ ...element, logoSrc: v })}
+            />
+            <InputField
+              label="Alt Text"
+              value={element.logoAlt}
+              onChange={(v) => onChange({ ...element, logoAlt: v })}
+            />
+            <InputField
+              label="Width"
+              value={element.logoWidth || "180px"}
+              onChange={(v) => onChange({ ...element, logoWidth: v })}
+            />
+            <SelectField
+              label="Position"
+              value={element.logoPosition || "left"}
+              options={[
+                { label: "Left", value: "left" },
+                { label: "Center", value: "center" },
+                { label: "Right", value: "right" },
+              ]}
+              onChange={(v) => onChange({ ...element, logoPosition: v as "left" | "center" | "right" })}
+            />
+          </div>
+
+          {/* ── Tagline ── */}
+          <div className="space-y-2 border-t border-gray-200 pt-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Tagline</p>
+            <InputField
+              label="Tagline Text"
+              value={element.tagline || ""}
+              onChange={(v) => onChange({ ...element, tagline: v })}
+            />
+            {element.tagline && (
+              <>
+                <ColorField
+                  label="Tagline Color"
+                  value={element.taglineColor || "#6b7280"}
+                  onChange={(v) => onChange({ ...element, taglineColor: v })}
+                />
+                <InputField
+                  label="Tagline Font Size"
+                  value={element.taglineFontSize || "12px"}
+                  onChange={(v) => onChange({ ...element, taglineFontSize: v })}
+                />
+              </>
+            )}
+          </div>
+
+          {/* ── Navigation ── */}
+          <div className="space-y-2 border-t border-gray-200 pt-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Navigation</p>
+            <SelectField
+              label="Nav Position"
+              value={element.navPosition || "right"}
+              options={[
+                { label: "Right", value: "right" },
+                { label: "Left", value: "left" },
+                { label: "Center", value: "center" },
+                { label: "Below Logo", value: "below" },
+              ]}
+              onChange={(v) => onChange({ ...element, navPosition: v as "left" | "center" | "right" | "below" })}
+            />
+            <SelectField
+              label="Nav Style"
+              value={element.navStyle || "text"}
+              options={[
+                { label: "Plain Text", value: "text" },
+                { label: "Pill Buttons", value: "pills" },
+                { label: "Underlined", value: "underline" },
+                { label: "Bold", value: "bold" },
+              ]}
+              onChange={(v) => onChange({ ...element, navStyle: v as "text" | "pills" | "underline" | "bold" })}
+            />
+            <InputField
+              label="Nav Font Size"
+              value={element.navFontSize || "13px"}
+              onChange={(v) => onChange({ ...element, navFontSize: v })}
+            />
+            <ColorField
+              label="Nav Color"
+              value={element.navColor || element.textColor || "#374151"}
+              onChange={(v) => onChange({ ...element, navColor: v })}
+            />
+            {(element.navLinks || []).map((link, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <input
+                  value={link.label}
+                  onChange={(e) => {
+                    const nl = [...(element.navLinks || [])];
+                    nl[i] = { ...link, label: e.target.value };
+                    onChange({ ...element, navLinks: nl });
+                  }}
+                  className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none"
+                  placeholder="Label"
+                />
+                <input
+                  value={link.url}
+                  onChange={(e) => {
+                    const nl = [...(element.navLinks || [])];
+                    nl[i] = { ...link, url: e.target.value };
+                    onChange({ ...element, navLinks: nl });
+                  }}
+                  className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none"
+                  placeholder="URL"
+                />
+                <button
+                  onClick={() => {
+                    const nl = (element.navLinks || []).filter((_, idx) => idx !== i);
+                    onChange({ ...element, navLinks: nl });
+                  }}
+                  className="text-gray-400 hover:text-red-500 text-xs px-1"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => onChange({ ...element, navLinks: [...(element.navLinks || []), { label: "Link", url: "https://example.com" }] })}
+              className="w-full rounded border border-dashed border-gray-300 py-1 text-[10px] text-gray-400 hover:border-indigo-400 hover:text-indigo-600"
+            >
+              + Add Nav Link
+            </button>
+          </div>
+
+          {/* ── CTA Button ── */}
+          <div className="space-y-2 border-t border-gray-200 pt-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">CTA Button</p>
+            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={element.showCta || false}
+                onChange={(e) => onChange({ ...element, showCta: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              Show CTA button
+            </label>
+            {element.showCta && (
+              <>
+                <InputField
+                  label="Button Text"
+                  value={element.ctaText || "Shop Now"}
+                  onChange={(v) => onChange({ ...element, ctaText: v })}
+                />
+                <InputField
+                  label="Button URL"
+                  value={element.ctaUrl || ""}
+                  onChange={(v) => onChange({ ...element, ctaUrl: v })}
+                />
+                <ColorField
+                  label="Button Color"
+                  value={element.ctaColor || "#4F46E5"}
+                  onChange={(v) => onChange({ ...element, ctaColor: v })}
+                />
+                <ColorField
+                  label="Button Text Color"
+                  value={element.ctaTextColor || "#ffffff"}
+                  onChange={(v) => onChange({ ...element, ctaTextColor: v })}
+                />
+                <InputField
+                  label="Border Radius"
+                  value={element.ctaBorderRadius || "6px"}
+                  onChange={(v) => onChange({ ...element, ctaBorderRadius: v })}
+                />
+              </>
+            )}
+          </div>
+
+          {/* ── Styling ── */}
+          <div className="space-y-2 border-t border-gray-200 pt-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Style</p>
+            <InputField
+              label="Preheader Text"
+              value={element.preheaderText || ""}
+              onChange={(v) => onChange({ ...element, preheaderText: v })}
+            />
+            <ColorField
+              label="Background Color"
+              value={element.backgroundColor || "#ffffff"}
+              onChange={(v) => onChange({ ...element, backgroundColor: v })}
+            />
+            <ColorField
+              label="Text Color"
+              value={element.textColor || "#374151"}
+              onChange={(v) => onChange({ ...element, textColor: v })}
+            />
+            <InputField
+              label="Border Bottom"
+              value={element.borderBottom || ""}
+              onChange={(v) => onChange({ ...element, borderBottom: v })}
+            />
+            <InputField
+              label="Padding"
+              value={element.styles.padding || "16px 0"}
+              onChange={(v) => updateStyles("padding", v)}
+            />
+          </div>
         </div>
       );
 

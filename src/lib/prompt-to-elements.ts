@@ -461,32 +461,154 @@ const PATTERNS: PromptPattern[] = [
     },
   },
 
-  // ── Email Header ──
+  // ── Email Header (rich prompt parsing) ──
   {
-    keywords: ["email header", "header section", "header block", "logo header", "nav header"],
+    keywords: ["email header", "header section", "header block", "logo header", "nav header", "header with", "top bar", "announcement bar", "header cta", "navigation header"],
     generate: (prompt) => {
       const lower = prompt.toLowerCase();
-      const variant = lower.includes("centered") ? "centered" as const
-        : lower.includes("logo only") ? "logo-only" as const
+
+      // ── Variant detection ──
+      const variant = lower.includes("ecommerce") || lower.includes("e-commerce") ? "ecommerce" as const
+        : lower.includes("bold") ? "bold" as const
+        : lower.includes("minimal") ? "minimal" as const
+        : lower.includes("centered") || lower.includes("centre") ? "centered" as const
+        : lower.includes("logo only") || lower.includes("logo-only") ? "logo-only" as const
+        : lower.includes("full") ? "full" as const
         : "logo-nav" as const;
+
+      // ── Logo position ──
+      const logoPosition: "left" | "center" | "right" =
+        lower.includes("logo center") || lower.includes("centered logo") || lower.includes("logo in the center") || lower.includes("logo middle") ? "center"
+        : lower.includes("logo right") || lower.includes("logo on the right") || lower.includes("right logo") ? "right"
+        : variant === "centered" ? "center"
+        : "left";
+
+      // ── Logo width ──
+      const logoWidthMatch = lower.match(/logo\s+(?:width\s+)?(\d+)\s*(?:px)?/);
+      const logoSmall = lower.includes("small logo") || lower.includes("logo small");
+      const logoLarge = lower.includes("large logo") || lower.includes("logo large") || lower.includes("big logo");
+      const logoWidth = logoWidthMatch ? `${logoWidthMatch[1]}px`
+        : logoSmall ? "120px"
+        : logoLarge ? "240px"
+        : "180px";
+
+      // ── Background & text color ──
+      const bgColor = extractHeaderColor(lower, ["background", "bg"]) || (
+        lower.includes("dark header") || lower.includes("dark background") ? "#1f2937"
+        : lower.includes("black header") ? "#111827"
+        : "#ffffff"
+      );
+      const isDarkBg = ["#1f2937", "#111827", "#000000", "#1e3a5f"].includes(bgColor) ||
+        lower.includes("dark") || lower.includes("black");
+      const textColor = extractHeaderColor(lower, ["text color", "text"]) || (isDarkBg ? "#ffffff" : "#374151");
+
+      // ── Nav position ──
+      const navPosition: "left" | "center" | "right" | "below" =
+        lower.includes("nav below") || lower.includes("navigation below") || lower.includes("links below") || lower.includes("nav under") ? "below"
+        : lower.includes("nav left") || lower.includes("navigation left") || lower.includes("links left") ? "left"
+        : lower.includes("nav center") || lower.includes("navigation center") || lower.includes("links center") ? "center"
+        : variant === "centered" ? "below"
+        : "right";
+
+      // ── Nav style ──
+      const navStyle: "text" | "pills" | "underline" | "bold" =
+        lower.includes("pill") || lower.includes("rounded nav") || lower.includes("tag nav") ? "pills"
+        : lower.includes("underline") ? "underline"
+        : lower.includes("bold nav") || lower.includes("bold link") ? "bold"
+        : "text";
+
+      // ── Nav color ──
+      const navColor = extractHeaderColor(lower, ["nav color", "link color", "nav"]) || "";
+
+      // ── Nav font size ──
+      const navFsMatch = lower.match(/nav\s+(?:font\s+)?(?:size\s+)?(\d+)\s*(?:px)?/);
+      const navFontSize = navFsMatch ? `${navFsMatch[1]}px` : "13px";
+
+      // ── Parse custom nav link names from prompt ──
+      const navLinks = parseNavLinksFromPrompt(lower);
+
+      // ── Tagline ──
+      const taglineMatch = prompt.match(/(?:tagline|subtitle|slogan)\s+["']([^"']+)["']/i) ||
+        prompt.match(/["']([^"']+)["']\s+(?:tagline|subtitle|slogan)/i);
+      const tagline = taglineMatch ? taglineMatch[1] : "";
+      const taglineColor = extractHeaderColor(lower, ["tagline color"]) || (isDarkBg ? "#9ca3af" : "#6b7280");
+
+      // ── CTA button ──
+      const ctaTextMatch = prompt.match(/(?:cta|button)\s+["']([^"']+)["']/i) ||
+        prompt.match(/["']([^"']+)["']\s+(?:cta|button)/i);
+      const hasCta = lower.includes("cta") || lower.includes("button") || lower.includes("shop now") || lower.includes("get started") || lower.includes("sign up");
+      const ctaText = ctaTextMatch ? ctaTextMatch[1]
+        : lower.includes("shop now") ? "Shop Now"
+        : lower.includes("get started") ? "Get Started"
+        : lower.includes("sign up") ? "Sign Up"
+        : lower.includes("subscribe") ? "Subscribe"
+        : lower.includes("learn more") ? "Learn More"
+        : lower.includes("buy now") ? "Buy Now"
+        : "Shop Now";
+      const ctaColor = extractHeaderColor(lower, ["cta color", "button color"]) || "#4F46E5";
+      const ctaTextColor = extractHeaderColor(lower, ["cta text"]) || "#ffffff";
+      const ctaRound = lower.includes("rounded cta") || lower.includes("pill cta") || lower.includes("round button");
+      const ctaBorderRadius = ctaRound ? "999px" : "6px";
+
+      // ── Announcement bar ──
+      const announcementMatch = prompt.match(/(?:announcement|top bar|banner)\s+["']([^"']+)["']/i) ||
+        prompt.match(/["']([^"']+)["']\s+(?:announcement|top bar|banner)/i);
+      const hasAnnouncement = lower.includes("announcement") || lower.includes("top bar") || lower.includes("banner bar") || lower.includes("promo bar");
+      const announcementText = announcementMatch ? announcementMatch[1]
+        : hasAnnouncement ? "Free shipping on orders over $50!"
+        : "";
+      const announcementBg = extractHeaderColor(lower, ["announcement bg", "announcement background", "bar bg", "bar background"]) || (isDarkBg ? "#4F46E5" : "#4F46E5");
+      const announcementTextColor = extractHeaderColor(lower, ["announcement text", "bar text"]) || "#ffffff";
+
+      // ── Preheader ──
+      const preheaderMatch = prompt.match(/preheader\s+["']([^"']+)["']/i);
+      const preheaderText = preheaderMatch ? preheaderMatch[1] : "";
+
+      // ── Border ──
+      const hasBorder = lower.includes("border") || lower.includes("divider") || lower.includes("separator") || lower.includes("line below");
+      const borderColor = extractHeaderColor(lower, ["border color"]) || "#e5e7eb";
+      const borderBottom = hasBorder ? `1px solid ${borderColor}` : "";
+
+      // ── Padding ──
+      const paddingMatch = lower.match(/padding\s+(\d+)\s*(?:px)?/);
+      const padding = paddingMatch ? `${paddingMatch[1]}px`
+        : lower.includes("compact") || lower.includes("tight") ? "8px 0"
+        : lower.includes("spacious") || lower.includes("roomy") ? "24px 0"
+        : "16px 0";
+
       return [
         {
           id: uuid(),
           type: "header",
           variant,
-          logoSrc: "https://placehold.co/180x50/f8fafc/334155?text=YOUR+LOGO",
+          logoSrc: "https://placehold.co/" + parseInt(logoWidth) + "x50/" +
+            (isDarkBg ? "ffffff/1f2937" : "f8fafc/334155") + "?text=YOUR+LOGO",
           logoAlt: "Company Logo",
-          logoWidth: "180px",
-          navLinks: [
-            { label: "Home", url: "https://example.com" },
-            { label: "Shop", url: "https://example.com/shop" },
-            { label: "Sale", url: "https://example.com/sale" },
-            { label: "About", url: "https://example.com/about" },
-          ],
-          preheaderText: "",
-          backgroundColor: "#ffffff",
-          textColor: "#374151",
-          styles: { padding: "16px 0" },
+          logoWidth,
+          logoPosition,
+          tagline,
+          taglineColor,
+          taglineFontSize: "12px",
+          navLinks,
+          navPosition,
+          navStyle,
+          navFontSize,
+          navColor,
+          ctaText,
+          ctaUrl: "https://example.com",
+          ctaColor,
+          ctaTextColor,
+          ctaBorderRadius,
+          showCta: hasCta,
+          announcementText,
+          announcementBg,
+          announcementTextColor,
+          showAnnouncement: hasAnnouncement,
+          preheaderText,
+          backgroundColor: bgColor,
+          textColor,
+          borderBottom,
+          styles: { padding },
         },
       ];
     },
@@ -707,6 +829,77 @@ function inferLabel(prompt: string, fallback: string): string {
   if (prompt.toLowerCase().includes("launch")) return "Launching in";
   if (prompt.toLowerCase().includes("event")) return "Event starts in";
   return fallback;
+}
+
+// ── Header-specific helpers ──
+
+function extractHeaderColor(lower: string, prefixes: string[]): string | null {
+  for (const prefix of prefixes) {
+    // Match patterns like "background red", "bg #333", "background color navy"
+    const regex = new RegExp(`${prefix}\\s+(?:color\\s+)?(?:is\\s+)?(?:should\\s+be\\s+)?(#[0-9a-fA-F]{3,8}|\\w+)`, "i");
+    const match = lower.match(regex);
+    if (match) {
+      const c = resolveColor(match[1]);
+      if (c) return c;
+    }
+  }
+  return null;
+}
+
+function parseNavLinksFromPrompt(lower: string): { label: string; url: string }[] {
+  // Try to find explicit link names: "links: Home, Shop, Blog, Contact"
+  const explicitMatch = lower.match(
+    /(?:links?|nav|navigation|menu)\s*(?::\s*|are\s+|with\s+|including\s+)([\w\s,&]+)/i,
+  );
+  if (explicitMatch) {
+    const names = explicitMatch[1]
+      .split(/[,&]/)
+      .map((s) => s.trim())
+      .filter((s) => s && s.length < 20 && !/\b(and|the|with|on|in|is)\b/i.test(s));
+    if (names.length >= 2) {
+      return names.map((name) => ({
+        label: name.replace(/\b\w/g, (c) => c.toUpperCase()),
+        url: `https://example.com/${name.toLowerCase().replace(/\s+/g, "-")}`,
+      }));
+    }
+  }
+
+  // Detect specific common pages mentioned
+  const pages: { label: string; url: string }[] = [];
+  const pageKeywords: [string, string][] = [
+    ["home", "https://example.com"],
+    ["shop", "https://example.com/shop"],
+    ["store", "https://example.com/store"],
+    ["sale", "https://example.com/sale"],
+    ["about", "https://example.com/about"],
+    ["contact", "https://example.com/contact"],
+    ["blog", "https://example.com/blog"],
+    ["faq", "https://example.com/faq"],
+    ["pricing", "https://example.com/pricing"],
+    ["features", "https://example.com/features"],
+    ["products", "https://example.com/products"],
+    ["support", "https://example.com/support"],
+    ["portfolio", "https://example.com/portfolio"],
+    ["services", "https://example.com/services"],
+    ["careers", "https://example.com/careers"],
+    ["login", "https://example.com/login"],
+    ["sign in", "https://example.com/login"],
+    ["help", "https://example.com/help"],
+  ];
+  for (const [keyword, url] of pageKeywords) {
+    if (lower.includes(keyword)) {
+      pages.push({ label: keyword.replace(/\b\w/g, (c) => c.toUpperCase()), url });
+    }
+  }
+  if (pages.length >= 2) return pages;
+
+  // Default nav links
+  return [
+    { label: "Home", url: "https://example.com" },
+    { label: "Shop", url: "https://example.com/shop" },
+    { label: "Sale", url: "https://example.com/sale" },
+    { label: "About", url: "https://example.com/about" },
+  ];
 }
 
 function inferHeadingText(prompt: string): string {
@@ -1102,7 +1295,7 @@ export const PROMPT_SUGGESTIONS: PromptSuggestion[] = [
   { label: "Social Links", prompt: "social media links", icon: "@" },
   { label: "Mktg Footer", prompt: "marketing footer with unsubscribe and social", icon: "⊥" },
   { label: "Txn Footer", prompt: "transactional footer", icon: "⊥" },
-  { label: "Header", prompt: "email header with logo and navigation", icon: "⊤" },
+  { label: "Header", prompt: "email header with logo left, nav right, and Shop Now CTA", icon: "⊤" },
   { label: "Divider", prompt: "divider line", icon: "—" },
   { label: "Spacer", prompt: "spacer 30px", icon: "↕" },
   { label: "Image", prompt: "placeholder image", icon: "▣" },
@@ -1113,8 +1306,10 @@ export const PROMPT_SUGGESTIONS: PromptSuggestion[] = [
 export const CREATIVE_PROMPT_EXAMPLES: string[] = [
   'Dark background with white centered heading "Flash Sale" and countdown timer',
   'Left column product image, right column heading "New Arrival" with body text and Shop Now button',
-  'Blue header with logo on left and nav links on right',
+  'Dark header with centered logo, pill nav below, and "Shop Now" CTA button',
+  'Header with announcement bar "Free shipping today!", logo left, bold nav right, border bottom',
   'Red background, white text, centered heading "50% OFF" with promo code SAVE50 and CTA',
-  'Testimonial with 5-star rating, centered on light gray background',
+  'E-commerce header: logo left, nav links Home Shop Sale Blog, rounded CTA "Start Shopping"',
+  'Minimal header with small logo center, tagline "Since 2020", underline nav below',
   'Two columns: left is timer with "Sale ends" label, right is discount code and shop now button',
 ];

@@ -298,47 +298,119 @@ function generateFooter(el: FooterElement): string {
 function generateHeader(el: HeaderElement): string {
   const bgColor = el.backgroundColor || "#ffffff";
   const textColor = el.textColor || "#374151";
+  const navColor = el.navColor || textColor;
+  const navFontSize = el.navFontSize || "13px";
+  const navStyle = el.navStyle || "text";
+  const logoPosition = el.logoPosition || "left";
+  const navPosition = el.navPosition || "right";
+  const borderBottom = el.borderBottom || "";
 
+  // ── Announcement Bar ──
+  const announcementHtml = el.showAnnouncement && el.announcementText
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="background-color: ${el.announcementBg || "#4F46E5"}; color: ${el.announcementTextColor || "#ffffff"}; font-size: 12px; font-weight: 600; text-align: center; padding: 8px 16px; letter-spacing: 0.5px; font-family: Arial, sans-serif;">
+            ${el.announcementText}
+          </td>
+        </tr>
+      </table>` : "";
+
+  // ── Preheader ──
   const preheaderHtml = el.preheaderText
-    ? `<p style="margin: 0 0 12px; font-size: 11px; color: #9ca3af; text-align: center;">${el.preheaderText}</p>` : "";
+    ? `<p style="margin: 0 0 12px; font-size: 11px; color: #9ca3af; text-align: center; font-family: Arial, sans-serif;">${el.preheaderText}</p>` : "";
 
-  const logoHtml = `<img src="${el.logoSrc}" alt="${el.logoAlt}" width="${parseInt(el.logoWidth || "180")}" style="display: block; border: 0; height: auto;" />`;
+  // ── Logo + Tagline ──
+  const logoWidth = parseInt(el.logoWidth || "180");
+  const taglineHtml = el.tagline
+    ? `<p style="margin: 4px 0 0; font-size: ${el.taglineFontSize || "12px"}; color: ${el.taglineColor || "#6b7280"}; font-family: Arial, sans-serif;">${el.tagline}</p>` : "";
+  const logoBlockHtml = `<div style="display: inline-block;">
+    <img src="${el.logoSrc}" alt="${el.logoAlt}" width="${logoWidth}" style="display: block; border: 0; height: auto;" />
+    ${taglineHtml}
+  </div>`;
 
-  const navHtml = el.navLinks.length > 0
-    ? el.navLinks.map((link) =>
-        `<a href="${link.url}" style="color: ${textColor}; font-size: 13px; text-decoration: none; margin: 0 10px;">${link.label}</a>`
-      ).join("")
+  // ── Nav Links ──
+  const navLinks = el.navLinks || [];
+  const navLinkHtml = navLinks.length > 0
+    ? navLinks.map((link) => {
+        if (navStyle === "pills") {
+          return `<a href="${link.url}" style="display: inline-block; color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; background-color: ${navColor}18; padding: 5px 14px; border-radius: 999px; margin: 0 3px; font-family: Arial, sans-serif;">${link.label}</a>`;
+        }
+        if (navStyle === "underline") {
+          return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; border-bottom: 2px solid ${navColor}; padding-bottom: 2px; margin: 0 10px; font-family: Arial, sans-serif;">${link.label}</a>`;
+        }
+        if (navStyle === "bold") {
+          return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; font-weight: 700; margin: 0 10px; font-family: Arial, sans-serif;">${link.label}</a>`;
+        }
+        return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; margin: 0 10px; font-family: Arial, sans-serif;">${link.label}</a>`;
+      }).join("")
     : "";
 
-  if (el.variant === "centered" || el.variant === "logo-only") {
-    return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-  <tr>
-    <td style="background-color: ${bgColor}; padding: ${el.styles.padding || "16px 0"}; text-align: center;">
+  // ── CTA Button ──
+  const ctaHtml = el.showCta && el.ctaText
+    ? `<a href="${el.ctaUrl || "#"}" style="display: inline-block; background-color: ${el.ctaColor || "#4F46E5"}; color: ${el.ctaTextColor || "#ffffff"}; padding: 8px 20px; border-radius: ${el.ctaBorderRadius || "6px"}; font-size: 13px; font-weight: 600; text-decoration: none; margin-left: 12px; font-family: Arial, sans-serif;">${el.ctaText}</a>`
+    : "";
+
+  const isCentered = logoPosition === "center";
+  const isNavBelow = navPosition === "below";
+  const tdBorderStyle = borderBottom ? `border-bottom: ${borderBottom};` : "";
+
+  let innerHtml: string;
+
+  if (isCentered) {
+    innerHtml = `
       ${preheaderHtml}
       <div style="text-align: center;">
-        ${logoHtml.replace('display: block', 'display: inline-block')}
+        ${logoBlockHtml}
       </div>
-      ${el.variant === "centered" && navHtml ? `<div style="margin-top: 12px; text-align: center;">${navHtml}</div>` : ""}
-    </td>
-  </tr>
-</table>`;
-  }
-
-  // logo-nav and full variants
-  return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-  <tr>
-    <td style="background-color: ${bgColor}; padding: ${el.styles.padding || "16px 0"};">
+      ${navLinkHtml ? `<div style="margin-top: 10px; text-align: center;">${navLinkHtml}${ctaHtml}</div>` : (ctaHtml ? `<div style="margin-top: 10px; text-align: center;">${ctaHtml}</div>` : "")}`;
+  } else if (isNavBelow) {
+    const logoAlign = logoPosition === "right" ? "right" : "left";
+    innerHtml = `
       ${preheaderHtml}
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
         <tr>
-          <td style="vertical-align: middle;">
-            ${logoHtml}
+          <td style="vertical-align: middle; text-align: ${logoAlign};">
+            ${logoBlockHtml}
           </td>
-          ${navHtml ? `<td style="vertical-align: middle; text-align: right;">${navHtml}</td>` : ""}
+          ${ctaHtml ? `<td style="vertical-align: middle; text-align: right;">${ctaHtml}</td>` : ""}
         </tr>
       </table>
+      ${navLinkHtml ? `<div style="margin-top: 10px; text-align: ${logoAlign};">${navLinkHtml}</div>` : ""}`;
+  } else {
+    // Horizontal layout
+    const isLogoRight = logoPosition === "right";
+    const navAlign = navPosition === "left" ? "left" : navPosition === "center" ? "center" : "right";
+
+    if (isLogoRight) {
+      innerHtml = `
+        ${preheaderHtml}
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            ${navLinkHtml || ctaHtml ? `<td style="vertical-align: middle; text-align: ${navAlign};">${navLinkHtml}${ctaHtml}</td>` : ""}
+            <td style="vertical-align: middle; text-align: right;">
+              ${logoBlockHtml}
+            </td>
+          </tr>
+        </table>`;
+    } else {
+      innerHtml = `
+        ${preheaderHtml}
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td style="vertical-align: middle;">
+              ${logoBlockHtml}
+            </td>
+            ${navLinkHtml || ctaHtml ? `<td style="vertical-align: middle; text-align: ${navAlign};">${navLinkHtml}${ctaHtml}</td>` : ""}
+          </tr>
+        </table>`;
+    }
+  }
+
+  return `${announcementHtml}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td style="background-color: ${bgColor}; padding: ${el.styles.padding || "16px 0"};${tdBorderStyle}">
+      ${innerHtml}
     </td>
   </tr>
 </table>`;
