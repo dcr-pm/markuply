@@ -24,7 +24,7 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">
+      <label className="block text-[11px] font-medium text-mk-text-muted mb-1">
         {label}
       </label>
       {type === "textarea" ? (
@@ -32,14 +32,14 @@ function InputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-mk-border px-3 py-2 text-sm text-mk-text focus:border-mk-primary focus:outline-none focus:ring-1 focus:ring-mk-primary"
         />
       ) : (
         <input
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-mk-border px-3 py-2 text-sm text-mk-text focus:border-mk-primary focus:outline-none focus:ring-1 focus:ring-mk-primary"
         />
       )}
     </div>
@@ -57,7 +57,7 @@ function ColorField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">
+      <label className="block text-[11px] font-medium text-mk-text-muted mb-1">
         {label}
       </label>
       <div className="flex items-center gap-2">
@@ -65,13 +65,13 @@ function ColorField({
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-8 rounded border border-gray-300 cursor-pointer"
+          className="h-8 w-8 rounded-md border border-mk-border cursor-pointer"
         />
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-mono focus:border-indigo-500 focus:outline-none"
+          className="flex-1 rounded-lg border border-mk-border px-3 py-1.5 text-sm font-mono text-mk-text focus:border-mk-primary focus:outline-none"
         />
       </div>
     </div>
@@ -91,13 +91,13 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">
+      <label className="block text-[11px] font-medium text-mk-text-muted mb-1">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+        className="w-full rounded-lg border border-mk-border px-3 py-2 text-sm text-mk-text focus:border-mk-primary focus:outline-none"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -118,8 +118,8 @@ function renderProperties(
   };
 
   const commonStyleFields = (
-    <div className="space-y-3 border-t border-gray-200 pt-3 mt-3">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+    <div className="space-y-3 border-t border-mk-border-light pt-3 mt-3">
+      <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">
         Style
       </p>
       <ColorField
@@ -542,8 +542,8 @@ function renderProperties(
           />
 
           {/* ── Announcement Bar ── */}
-          <div className="space-y-2 border-t border-gray-200 pt-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Announcement Bar</p>
+          <div className="space-y-2 border-t border-mk-border-light pt-3">
+            <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">Announcement Bar</p>
             <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
               <input
                 type="checkbox"
@@ -575,8 +575,8 @@ function renderProperties(
           </div>
 
           {/* ── Logo ── */}
-          <div className="space-y-2 border-t border-gray-200 pt-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Logo</p>
+          <div className="space-y-2 border-t border-mk-border-light pt-3">
+            <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">Logo</p>
             <InputField
               label="Logo URL"
               value={element.logoSrc}
@@ -605,8 +605,8 @@ function renderProperties(
           </div>
 
           {/* ── Tagline ── */}
-          <div className="space-y-2 border-t border-gray-200 pt-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Tagline</p>
+          <div className="space-y-2 border-t border-mk-border-light pt-3">
+            <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">Tagline</p>
             <InputField
               label="Tagline Text"
               value={element.tagline || ""}
@@ -629,8 +629,8 @@ function renderProperties(
           </div>
 
           {/* ── Navigation ── */}
-          <div className="space-y-2 border-t border-gray-200 pt-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Navigation</p>
+          <div className="space-y-2 border-t border-mk-border-light pt-3">
+            <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">Navigation</p>
             <SelectField
               label="Nav Position"
               value={element.navPosition || "right"}
@@ -705,8 +705,8 @@ function renderProperties(
           </div>
 
           {/* ── CTA Button ── */}
-          <div className="space-y-2 border-t border-gray-200 pt-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">CTA Button</p>
+          <div className="space-y-2 border-t border-mk-border-light pt-3">
+            <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">CTA Button</p>
             <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
               <input
                 type="checkbox"
@@ -748,8 +748,8 @@ function renderProperties(
           </div>
 
           {/* ── Styling ── */}
-          <div className="space-y-2 border-t border-gray-200 pt-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Style</p>
+          <div className="space-y-2 border-t border-mk-border-light pt-3">
+            <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">Style</p>
             <InputField
               label="Preheader Text"
               value={element.preheaderText || ""}
@@ -794,13 +794,16 @@ export function PropertyPanel({
 }: PropertyPanelProps) {
   if (!element) {
     return (
-      <div className="w-72 shrink-0 border-l border-gray-200 bg-white p-6">
+      <div className="w-72 shrink-0 border-l border-mk-border bg-mk-surface p-6">
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100">
-            <span className="text-xl text-gray-400">✎</span>
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-mk-primary-50">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--mk-primary)" strokeWidth="1.5">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
           </div>
-          <p className="text-sm font-medium text-gray-500">No element selected</p>
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="text-sm font-medium text-mk-text">No element selected</p>
+          <p className="mt-1 text-xs text-mk-text-muted">
             Click an element to edit its properties
           </p>
         </div>
@@ -826,42 +829,44 @@ export function PropertyPanel({
   };
 
   return (
-    <div className="w-72 shrink-0 overflow-y-auto border-l border-gray-200 bg-white">
+    <div className="w-72 shrink-0 overflow-y-auto border-l border-mk-border bg-mk-surface mk-panel-slide">
       <div className="p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">
+        {/* Header */}
+        <div className="mb-3 flex items-center gap-2">
+          <div className="h-6 w-1 rounded-full bg-mk-primary" />
+          <h3 className="text-sm font-bold text-mk-text">
             {typeLabels[element.type] || element.type}
           </h3>
         </div>
 
         {/* Actions */}
-        <div className="mb-4 flex gap-1.5">
+        <div className="mb-4 flex gap-1">
           <button
             onClick={onMoveUp}
-            className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
-            title="Move up"
+            className="rounded-md border border-mk-border px-2 py-1 text-xs text-mk-text-secondary hover:bg-mk-primary-50 hover:text-mk-primary hover:border-mk-primary transition-all"
+            title="Move up (Ctrl+↑)"
           >
             ↑
           </button>
           <button
             onClick={onMoveDown}
-            className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
-            title="Move down"
+            className="rounded-md border border-mk-border px-2 py-1 text-xs text-mk-text-secondary hover:bg-mk-primary-50 hover:text-mk-primary hover:border-mk-primary transition-all"
+            title="Move down (Ctrl+↓)"
           >
             ↓
           </button>
           <button
             onClick={onDuplicate}
-            className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
-            title="Duplicate"
+            className="rounded-md border border-mk-border px-2 py-1 text-xs text-mk-text-secondary hover:bg-mk-primary-50 hover:text-mk-primary hover:border-mk-primary transition-all"
+            title="Duplicate (Ctrl+D)"
           >
             Copy
           </button>
           <div className="flex-1" />
           <button
             onClick={onDelete}
-            className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50"
-            title="Delete"
+            className="rounded-md border border-mk-accent/20 px-2 py-1 text-xs text-mk-accent hover:bg-mk-accent-light hover:border-mk-accent/40 transition-all"
+            title="Delete (Del)"
           >
             Delete
           </button>

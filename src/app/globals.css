@@ -1,24 +1,93 @@
 @import "tailwindcss";
 
+/* ── Markuply Brand System ── */
+
 :root {
+  /* Primary — electric violet */
+  --mk-primary: #7C5CFC;
+  --mk-primary-hover: #6B4CE6;
+  --mk-primary-light: #EDE9FE;
+  --mk-primary-50: #F5F3FF;
+  --mk-primary-100: #EDE9FE;
+  --mk-primary-200: #DDD6FE;
+  --mk-primary-700: #6B4CE6;
+  --mk-primary-800: #5B3FCC;
+
+  /* Accent — warm coral */
+  --mk-accent: #FF6B6B;
+  --mk-accent-hover: #FF5252;
+  --mk-accent-light: #FFF1F0;
+
+  /* Surfaces */
+  --mk-bg: #FAFAFC;
+  --mk-surface: #ffffff;
+  --mk-surface-raised: #ffffff;
+  --mk-surface-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Borders */
+  --mk-border: #E8E5F0;
+  --mk-border-light: #F0EDF7;
+  --mk-border-focus: var(--mk-primary);
+
+  /* Text */
+  --mk-text: #1A1625;
+  --mk-text-secondary: #6B6580;
+  --mk-text-muted: #9E97B3;
+  --mk-text-on-primary: #ffffff;
+
+  /* Sidebar */
+  --mk-sidebar-bg: #1A1625;
+  --mk-sidebar-text: #C4BFD6;
+  --mk-sidebar-text-hover: #ffffff;
+  --mk-sidebar-accent: var(--mk-primary);
+
+  /* Canvas */
+  --mk-canvas-bg: #F3F1F8;
+  --mk-canvas-dot: #DDD6FE;
+
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1A1625;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: "Courier New", monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+
+  /* Expose brand colors to Tailwind */
+  --color-mk-primary: var(--mk-primary);
+  --color-mk-primary-hover: var(--mk-primary-hover);
+  --color-mk-primary-light: var(--mk-primary-light);
+  --color-mk-primary-50: var(--mk-primary-50);
+  --color-mk-primary-100: var(--mk-primary-100);
+  --color-mk-primary-200: var(--mk-primary-200);
+  --color-mk-primary-700: var(--mk-primary-700);
+  --color-mk-primary-800: var(--mk-primary-800);
+  --color-mk-accent: var(--mk-accent);
+  --color-mk-accent-hover: var(--mk-accent-hover);
+  --color-mk-accent-light: var(--mk-accent-light);
+  --color-mk-bg: var(--mk-bg);
+  --color-mk-surface: var(--mk-surface);
+  --color-mk-border: var(--mk-border);
+  --color-mk-border-light: var(--mk-border-light);
+  --color-mk-text: var(--mk-text);
+  --color-mk-text-secondary: var(--mk-text-secondary);
+  --color-mk-text-muted: var(--mk-text-muted);
+  --color-mk-sidebar-bg: var(--mk-sidebar-bg);
+  --color-mk-sidebar-text: var(--mk-sidebar-text);
+  --color-mk-canvas-bg: var(--mk-canvas-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--mk-bg);
+  color: var(--mk-text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth scrollbar */
+/* ── Smooth scrollbars ── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -27,9 +96,105 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--mk-border);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--mk-text-muted);
+}
+
+/* ── Canvas dotted background ── */
+.mk-canvas-bg {
+  background-color: var(--mk-canvas-bg);
+  background-image: radial-gradient(circle, var(--mk-canvas-dot) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ── Builder element transitions ── */
+.mk-element {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.mk-element:hover {
+  box-shadow: 0 0 0 2px var(--mk-primary-200);
+}
+.mk-element-selected {
+  box-shadow: 0 0 0 2px var(--mk-primary) !important;
+}
+
+/* ── Drag ghost styling ── */
+.mk-dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+
+/* ── Drop zone pulse ── */
+@keyframes mk-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.mk-drop-zone-active {
+  animation: mk-pulse 1s ease-in-out infinite;
+}
+
+/* ── Inline toolbar ── */
+.mk-inline-toolbar {
+  position: absolute;
+  top: -44px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--mk-sidebar-bg);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.mk-inline-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: var(--mk-sidebar-text);
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.mk-inline-toolbar button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.mk-inline-toolbar .mk-tb-danger:hover {
+  background: rgba(255, 107, 107, 0.2);
+  color: var(--mk-accent);
+}
+.mk-inline-toolbar .mk-tb-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 2px;
+}
+
+/* ── Animated selection ring ── */
+@keyframes mk-ring {
+  0%, 100% { box-shadow: 0 0 0 2px var(--mk-primary); }
+  50% { box-shadow: 0 0 0 2px var(--mk-primary), 0 0 0 4px var(--mk-primary-200); }
+}
+
+/* ── Content editable focus ── */
+[contenteditable]:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--mk-primary-200);
+  border-radius: 4px;
+}
+
+/* ── Panel slide animation ── */
+@keyframes mk-slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.mk-panel-slide {
+  animation: mk-slide-in-right 0.2s ease-out;
 }

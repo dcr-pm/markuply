@@ -2,7 +2,6 @@
 
 import { useCallback, useState, useRef } from "react";
 import type { EmailElement, ElementType } from "@/types/builder";
-import { createDefaultElement } from "@/lib/element-defaults";
 import { TextBlock } from "./elements/TextBlock";
 import { HeadingBlock } from "./elements/HeadingBlock";
 import { ImageBlock } from "./elements/ImageBlock";
@@ -25,7 +24,28 @@ interface DragDropCanvasProps {
   onUpdateElement: (el: EmailElement) => void;
   onReorderElements: (elements: EmailElement[]) => void;
   onAddElement: (type: ElementType, index?: number) => void;
+  onDeleteElement?: () => void;
+  onDuplicateElement?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
+
+const TYPE_LABELS: Record<string, string> = {
+  text: "Text",
+  heading: "Heading",
+  image: "Image",
+  button: "Button",
+  divider: "Divider",
+  spacer: "Spacer",
+  video: "Video",
+  gif: "GIF",
+  timer: "Timer",
+  social: "Social",
+  columns: "Columns",
+  html: "HTML",
+  footer: "Footer",
+  header: "Header",
+};
 
 function renderElement(
   el: EmailElement,
@@ -34,36 +54,37 @@ function renderElement(
   onChange: (el: EmailElement) => void,
 ) {
   const props = { selected, onSelect };
+  const changeFn = onChange as (el: EmailElement) => void;
 
   switch (el.type) {
     case "text":
-      return <TextBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <TextBlock element={el} onChange={changeFn} {...props} />;
     case "heading":
-      return <HeadingBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <HeadingBlock element={el} onChange={changeFn} {...props} />;
     case "image":
-      return <ImageBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <ImageBlock element={el} onChange={changeFn} {...props} />;
     case "button":
-      return <ButtonBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <ButtonBlock element={el} onChange={changeFn} {...props} />;
     case "divider":
       return <DividerBlock element={el} {...props} />;
     case "spacer":
       return <SpacerBlock element={el} {...props} />;
     case "video":
-      return <VideoBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <VideoBlock element={el} onChange={changeFn} {...props} />;
     case "gif":
-      return <GifBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <GifBlock element={el} onChange={changeFn} {...props} />;
     case "timer":
-      return <TimerBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <TimerBlock element={el} onChange={changeFn} {...props} />;
     case "social":
-      return <SocialBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <SocialBlock element={el} onChange={changeFn} {...props} />;
     case "columns":
-      return <ColumnsBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <ColumnsBlock element={el} onChange={changeFn} {...props} />;
     case "html":
-      return <HtmlBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <HtmlBlock element={el} onChange={changeFn} {...props} />;
     case "footer":
-      return <FooterBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <FooterBlock element={el} onChange={changeFn} {...props} />;
     case "header":
-      return <HeaderBlock element={el} onChange={onChange as (el: EmailElement) => void} {...props} />;
+      return <HeaderBlock element={el} onChange={changeFn} {...props} />;
   }
 }
 
@@ -74,34 +95,33 @@ export function DragDropCanvas({
   onUpdateElement,
   onReorderElements,
   onAddElement,
+  onDeleteElement,
+  onDuplicateElement,
+  onMoveUp,
+  onMoveDown,
 }: DragDropCanvasProps) {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  // Use a ref for drag source index to avoid stale closure issues
   const dragSourceRef = useRef<number | null>(null);
 
   const handleDragOver = useCallback(
     (e: React.DragEvent, index: number) => {
       e.preventDefault();
       e.stopPropagation();
-      e.dataTransfer.dropEffect = dragSourceRef.current !== null ? "move" : "copy";
+      e.dataTransfer.dropEffect =
+        dragSourceRef.current !== null ? "move" : "copy";
       setDragOverIndex(index);
     },
     [],
   );
 
-  const handleDragLeave = useCallback(
-    (e: React.DragEvent) => {
-      e.stopPropagation();
-      // Only clear if we're leaving the drop zone entirely (not entering a child)
-      const related = e.relatedTarget as HTMLElement;
-      if (!e.currentTarget.contains(related)) {
-        setDragOverIndex(null);
-      }
-    },
-    [],
-  );
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.stopPropagation();
+    const related = e.relatedTarget as HTMLElement;
+    if (!e.currentTarget.contains(related)) {
+      setDragOverIndex(null);
+    }
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent, index: number) => {
@@ -109,8 +129,9 @@ export function DragDropCanvas({
       e.stopPropagation();
       setDragOverIndex(null);
 
-      // Check if it's a reorder drag (from within the canvas)
-      const reorderData = e.dataTransfer.getData("application/x-canvas-reorder");
+      const reorderData = e.dataTransfer.getData(
+        "application/x-canvas-reorder",
+      );
       if (reorderData) {
         const sourceIndex = parseInt(reorderData, 10);
         if (!isNaN(sourceIndex) && sourceIndex !== index) {
@@ -128,11 +149,9 @@ export function DragDropCanvas({
         return;
       }
 
-      // Check if it's an element from the sidebar
       const elementType = e.dataTransfer.getData("elementType") as ElementType;
       if (elementType) {
         onAddElement(elementType, index);
-        return;
       }
     },
     [elements, onAddElement, onReorderElements],
@@ -153,94 +172,125 @@ export function DragDropCanvas({
     [onAddElement],
   );
 
+  const selectedElement = selectedId
+    ? elements.find((el) => el.id === selectedId)
+    : null;
+
   return (
     <div
-      className="flex-1 overflow-y-auto bg-gray-100 p-6"
+      className="flex-1 overflow-y-auto mk-canvas-bg p-8"
       onDragOver={(e) => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = dragSourceRef.current !== null ? "move" : "copy";
+        e.dataTransfer.dropEffect =
+          dragSourceRef.current !== null ? "move" : "copy";
       }}
       onDrop={handleCanvasDrop}
       onClick={() => onSelectElement(null)}
     >
       <div className="mx-auto max-w-[640px]">
         {/* Email container */}
-        <div className="rounded-xl bg-white shadow-lg overflow-hidden">
-          {/* Email header bar */}
-          <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5">
-            <div className="h-3 w-3 rounded-full bg-red-400" />
-            <div className="h-3 w-3 rounded-full bg-yellow-400" />
-            <div className="h-3 w-3 rounded-full bg-green-400" />
-            <span className="ml-2 text-xs text-gray-400">Email Preview — 600px</span>
+        <div className="rounded-2xl bg-mk-surface shadow-xl overflow-hidden ring-1 ring-mk-border">
+          {/* Browser chrome */}
+          <div className="flex items-center gap-2 border-b border-mk-border bg-gradient-to-r from-gray-50 to-mk-primary-50/30 px-4 py-2">
+            <div className="flex gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-full bg-[#FF605C]" />
+              <div className="h-2.5 w-2.5 rounded-full bg-[#FFBD44]" />
+              <div className="h-2.5 w-2.5 rounded-full bg-[#00CA4E]" />
+            </div>
+            <div className="ml-3 flex-1 rounded-md bg-white/60 px-3 py-0.5 text-center">
+              <span className="text-[10px] text-mk-text-muted font-mono">
+                email-preview — 600px
+              </span>
+            </div>
           </div>
 
-          <div className="p-6 min-h-[400px]">
+          <div className="p-6 min-h-[500px]">
             {elements.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
-                  <span className="text-2xl">+</span>
+              /* Empty state */
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="mb-5 relative">
+                  <div className="h-20 w-20 rounded-2xl bg-mk-primary-50 flex items-center justify-center">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--mk-primary)" strokeWidth="1.5">
+                      <path d="M12 5v14m-7-7h14" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <div className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-mk-accent flex items-center justify-center">
+                    <span className="text-[8px] text-white font-bold">!</span>
+                  </div>
                 </div>
-                <p className="text-sm font-medium text-gray-500">
-                  Drag elements here or click to add
+                <p className="text-sm font-semibold text-mk-text">
+                  Drop blocks here to start
                 </p>
-                <p className="mt-1 text-xs text-gray-400">
-                  Start building your email by adding blocks from the sidebar
+                <p className="mt-1.5 text-xs text-mk-text-muted max-w-xs">
+                  Drag blocks from the sidebar, or click the quick-add buttons below
                 </p>
 
-                {/* Quick-add buttons */}
                 <div className="mt-6 flex flex-wrap justify-center gap-2">
-                  {(["heading", "text", "image", "button"] as ElementType[]).map(
-                    (type) => (
-                      <button
-                        key={type}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAddElement(type);
-                        }}
-                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-                      >
-                        + {type}
-                      </button>
-                    ),
-                  )}
+                  {(
+                    [
+                      "header",
+                      "heading",
+                      "text",
+                      "image",
+                      "button",
+                      "footer",
+                    ] as ElementType[]
+                  ).map((type) => (
+                    <button
+                      key={type}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddElement(type);
+                      }}
+                      className="rounded-lg border border-mk-border bg-white px-3 py-1.5 text-xs font-medium text-mk-text-secondary hover:border-mk-primary hover:bg-mk-primary-50 hover:text-mk-primary transition-all"
+                    >
+                      + {TYPE_LABELS[type]}
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : (
               <div>
                 {elements.map((el, index) => (
                   <div key={el.id}>
-                    {/* Drop zone above element — always has hit area */}
+                    {/* Drop zone */}
                     <div
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, index)}
                       className={`transition-all rounded-lg ${
                         dragOverIndex === index
-                          ? "h-4 bg-indigo-100 border-2 border-dashed border-indigo-400 my-1"
+                          ? "h-4 bg-mk-primary-100 border-2 border-dashed border-mk-primary my-1 mk-drop-zone-active"
                           : isDragging
                             ? "h-3 border-2 border-transparent my-0"
-                            : "h-1"
+                            : "h-0.5"
                       }`}
                     />
 
-                    {/* Element wrapper with drag handle */}
+                    {/* Element wrapper */}
                     <div
-                      className={`group relative ${
-                        dragSourceRef.current === index ? "opacity-30" : ""
-                      }`}
+                      className={`group relative mk-element rounded-lg transition-all ${
+                        selectedId === el.id ? "mk-element-selected" : ""
+                      } ${dragSourceRef.current === index ? "mk-dragging" : ""}`}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {/* Drag handle overlay — visible on hover */}
+                      {/* Drag handle */}
                       <div
                         draggable
                         onDragStart={(e) => {
                           dragSourceRef.current = index;
                           setIsDragging(true);
-                          e.dataTransfer.setData("application/x-canvas-reorder", String(index));
+                          e.dataTransfer.setData(
+                            "application/x-canvas-reorder",
+                            String(index),
+                          );
                           e.dataTransfer.effectAllowed = "move";
-                          // Set drag image
                           if (e.currentTarget.parentElement) {
-                            e.dataTransfer.setDragImage(e.currentTarget.parentElement, 50, 20);
+                            e.dataTransfer.setDragImage(
+                              e.currentTarget.parentElement,
+                              50,
+                              20,
+                            );
                           }
                         }}
                         onDragEnd={() => {
@@ -248,10 +298,16 @@ export function DragDropCanvas({
                           setIsDragging(false);
                           setDragOverIndex(null);
                         }}
-                        className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-6 cursor-grab items-center justify-center rounded-md bg-white/90 border border-gray-200 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity active:cursor-grabbing hover:bg-indigo-50 hover:border-indigo-300"
+                        className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-5 cursor-grab items-center justify-center rounded-md bg-mk-sidebar-bg/90 shadow-md opacity-0 group-hover:opacity-100 transition-opacity active:cursor-grabbing"
                         title="Drag to reorder"
                       >
-                        <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" className="text-gray-400">
+                        <svg
+                          width="8"
+                          height="14"
+                          viewBox="0 0 10 14"
+                          fill="white"
+                          opacity="0.7"
+                        >
                           <circle cx="3" cy="2" r="1.2" />
                           <circle cx="7" cy="2" r="1.2" />
                           <circle cx="3" cy="7" r="1.2" />
@@ -260,6 +316,59 @@ export function DragDropCanvas({
                           <circle cx="7" cy="12" r="1.2" />
                         </svg>
                       </div>
+
+                      {/* Inline floating toolbar — visible when selected */}
+                      {selectedId === el.id && selectedElement && (
+                        <div className="mk-inline-toolbar">
+                          <span className="px-2 text-[10px] font-semibold text-mk-primary uppercase tracking-wider">
+                            {TYPE_LABELS[el.type]}
+                          </span>
+                          <div className="mk-tb-divider" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMoveUp?.();
+                            }}
+                            title="Move up (Ctrl+↑)"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMoveDown?.();
+                            }}
+                            title="Move down (Ctrl+↓)"
+                          >
+                            ↓
+                          </button>
+                          <div className="mk-tb-divider" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDuplicateElement?.();
+                            }}
+                            title="Duplicate (Ctrl+D)"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="9" y="9" width="13" height="13" rx="2" />
+                              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                            </svg>
+                          </button>
+                          <button
+                            className="mk-tb-danger"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteElement?.();
+                            }}
+                            title="Delete (Del)"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
 
                       {renderElement(
                         el,
@@ -278,9 +387,9 @@ export function DragDropCanvas({
                   onDrop={(e) => handleDrop(e, elements.length)}
                   className={`transition-all rounded-lg ${
                     dragOverIndex === elements.length
-                      ? "h-4 bg-indigo-100 border-2 border-dashed border-indigo-400 mt-1"
+                      ? "h-4 bg-mk-primary-100 border-2 border-dashed border-mk-primary mt-1 mk-drop-zone-active"
                       : isDragging
-                        ? "h-6 border-2 border-transparent mt-0"
+                        ? "h-8 border-2 border-dashed border-mk-border mt-1 rounded-lg"
                         : "h-4"
                   }`}
                 />

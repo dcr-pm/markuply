@@ -31,7 +31,7 @@ const DEFAULT_TEMPLATE: EmailTemplate = {
 };
 
 export function EmailBuilder() {
-  const [mode, setMode] = useState<BuilderMode>("sketch");
+  const [mode, setMode] = useState<BuilderMode>("builder");
   const { value: savedTemplate, setValue: saveTemplate, loaded } =
     useLocalStorage<EmailTemplate>("markuply-template", DEFAULT_TEMPLATE);
   const [template, setTemplate] = useState<EmailTemplate>(DEFAULT_TEMPLATE);
@@ -39,8 +39,9 @@ export function EmailBuilder() {
   const [showGallery, setShowGallery] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showFirstVisit, setShowFirstVisit] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showSplitPreview, setShowSplitPreview] = useState(false);
 
-  // Load saved template on mount
   useEffect(() => {
     if (loaded) {
       if (savedTemplate.elements.length > 0) {
@@ -52,7 +53,6 @@ export function EmailBuilder() {
     }
   }, [loaded, savedTemplate]);
 
-  // Auto-save on changes (debounced)
   useEffect(() => {
     if (!loaded) return;
     const timer = setTimeout(() => {
@@ -160,8 +160,7 @@ export function EmailBuilder() {
   const handleNewDesign = useCallback(() => {
     setTemplate({ ...DEFAULT_TEMPLATE, id: uuid() });
     setSelectedId(null);
-    setMode("sketch");
-    setToast("New design started");
+    setMode("builder");
   }, []);
 
   // Keyboard shortcuts
@@ -207,91 +206,112 @@ export function EmailBuilder() {
     handleDuplicateElement,
   ]);
 
-  const modes: { mode: BuilderMode; label: string; icon: string }[] = [
-    { mode: "sketch", label: "Sketch", icon: "✎" },
-    { mode: "builder", label: "Builder", icon: "⊞" },
-    { mode: "preview", label: "Preview", icon: "◉" },
+  const modes: { mode: BuilderMode; label: string }[] = [
+    { mode: "builder", label: "Build" },
+    { mode: "sketch", label: "Sketch" },
+    { mode: "preview", label: "Preview" },
   ];
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
-      {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5 shadow-sm">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg font-bold text-gray-900 tracking-tight">
-            <span className="text-indigo-600">Markup</span>ly
-          </h1>
-          <div className="h-6 w-px bg-gray-200" />
+    <div className="flex h-screen flex-col bg-mk-bg">
+      {/* ── Top Bar ── */}
+      <header className="flex h-12 items-center justify-between border-b border-mk-border bg-mk-surface px-3 shrink-0">
+        {/* Left: Logo + name */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[var(--mk-primary)] to-[var(--mk-accent)] flex items-center justify-center">
+              <span className="text-[10px] font-bold text-white">M</span>
+            </div>
+            <span className="text-sm font-bold text-mk-text tracking-tight">
+              markuply
+            </span>
+          </div>
+          <div className="h-5 w-px bg-mk-border" />
           <input
             value={template.name}
             onChange={(e) =>
               setTemplate((prev) => ({ ...prev, name: e.target.value }))
             }
-            className="rounded-lg border-0 bg-transparent px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-sm font-medium text-mk-text hover:bg-mk-primary-50 focus:bg-mk-primary-50 focus:outline-none focus:ring-1 focus:ring-mk-primary w-40"
           />
         </div>
 
-        {/* Mode switcher */}
-        <div className="flex rounded-lg border border-gray-200 p-0.5">
-          {modes.map(({ mode: m, label, icon }) => (
+        {/* Center: Mode switcher */}
+        <div className="flex items-center rounded-lg bg-mk-bg p-0.5">
+          {modes.map(({ mode: m, label }) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-md px-4 py-1 text-xs font-semibold transition-all ${
                 mode === m
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-100"
+                  ? "bg-mk-surface text-mk-primary shadow-sm ring-1 ring-mk-border"
+                  : "text-mk-text-muted hover:text-mk-text"
               }`}
             >
-              <span>{icon}</span>
               {label}
             </button>
           ))}
         </div>
 
-        {/* Right actions */}
-        <div className="flex items-center gap-3">
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
+          {mode === "builder" && (
+            <button
+              onClick={() => setShowSplitPreview(!showSplitPreview)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all flex items-center gap-1 ${
+                showSplitPreview
+                  ? "bg-mk-primary text-white"
+                  : "text-mk-text-secondary hover:bg-mk-primary-50 hover:text-mk-primary"
+              }`}
+              title="Toggle split preview"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M12 3v18" />
+              </svg>
+              Preview
+            </button>
+          )}
           <button
             onClick={() => setShowGallery(true)}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-mk-text-secondary hover:bg-mk-primary-50 hover:text-mk-primary transition-all"
           >
             Templates
           </button>
           <button
             onClick={handleNewDesign}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-mk-text-secondary hover:bg-mk-primary-50 hover:text-mk-primary transition-all"
           >
-            New
+            + New
           </button>
+          <div className="h-5 w-px bg-mk-border" />
           <input
             value={template.subject}
             onChange={(e) =>
               setTemplate((prev) => ({ ...prev, subject: e.target.value }))
             }
-            placeholder="Email subject..."
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44"
+            placeholder="Subject line..."
+            className="rounded-md border border-mk-border px-2.5 py-1 text-xs text-mk-text focus:border-mk-primary focus:outline-none focus:ring-1 focus:ring-mk-primary w-40"
           />
-          <span className="text-xs text-gray-400">
-            {template.elements.length} block
-            {template.elements.length !== 1 && "s"}
-          </span>
+          <div className="rounded-full bg-mk-primary-50 px-2 py-0.5 text-[10px] font-semibold text-mk-primary tabular-nums">
+            {template.elements.length}
+          </div>
         </div>
       </header>
 
-      {/* Main content area */}
+      {/* ── Main Content ── */}
       <div className="flex flex-1 overflow-hidden">
         {mode === "sketch" && (
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 mk-canvas-bg">
             <div className="mx-auto max-w-[680px]">
               <div className="mb-6 text-center">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-mk-text">
                   Smart Sketch Builder
                 </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Draw rectangles to create sections (set column count first for
-                  multi-column layouts). Click a section and use the AI prompt
-                  to describe what goes inside — timers, banners, CTAs, text,
-                  images, and more. Every section and column has its own prompt bar.
+                <p className="mt-1 text-sm text-mk-text-muted">
+                  Draw rectangles to create sections. Click a section and use the AI
+                  prompt to describe what goes inside — timers, banners, CTAs, text,
+                  images, and more.
                 </p>
               </div>
               <SmartSketchCanvas onConvert={handleSketchConvert} />
@@ -301,7 +321,12 @@ export function EmailBuilder() {
 
         {mode === "builder" && (
           <>
-            <ElementSidebar onAddElement={handleAddElement} />
+            <ElementSidebar
+              onAddElement={handleAddElement}
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            />
+
             <DragDropCanvas
               elements={template.elements}
               selectedId={selectedId}
@@ -311,15 +336,26 @@ export function EmailBuilder() {
                 setTemplate((prev) => ({ ...prev, elements }))
               }
               onAddElement={handleAddElement}
-            />
-            <PropertyPanel
-              element={selectedElement}
-              onChange={handleUpdateElement}
-              onDelete={handleDeleteElement}
-              onDuplicate={handleDuplicateElement}
+              onDeleteElement={handleDeleteElement}
+              onDuplicateElement={handleDuplicateElement}
               onMoveUp={handleMoveUp}
               onMoveDown={handleMoveDown}
             />
+
+            {showSplitPreview ? (
+              <div className="w-[380px] shrink-0 border-l border-mk-border overflow-hidden">
+                <EmailPreview template={template} onToast={showToast} />
+              </div>
+            ) : (
+              <PropertyPanel
+                element={selectedElement}
+                onChange={handleUpdateElement}
+                onDelete={handleDeleteElement}
+                onDuplicate={handleDuplicateElement}
+                onMoveUp={handleMoveUp}
+                onMoveDown={handleMoveDown}
+              />
+            )}
           </>
         )}
 
@@ -328,7 +364,7 @@ export function EmailBuilder() {
         )}
       </div>
 
-      {/* Template gallery modal */}
+      {/* ── Modals ── */}
       {showGallery && (
         <TemplateGallery
           onSelect={handleTemplateSelect}
@@ -336,36 +372,26 @@ export function EmailBuilder() {
         />
       )}
 
-      {/* First visit overlay */}
       {showFirstVisit && !showGallery && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
-            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
-              <span className="text-3xl">✎</span>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-lg rounded-2xl bg-mk-surface p-8 text-center shadow-2xl">
+            <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--mk-primary)] to-[var(--mk-accent)]">
+              <span className="text-2xl font-bold text-white">M</span>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-mk-text">
               Welcome to Markuply
             </h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Create beautiful email designs by sketching on the canvas or use
-              our drag-and-drop builder with pre-built templates.
+            <p className="mt-2 text-sm text-mk-text-muted max-w-sm mx-auto">
+              Build beautiful email designs with our drag-and-drop builder. Start
+              from a template, sketch your layout, or build from scratch.
             </p>
-            <div className="mt-6 flex flex-col gap-3">
-              <button
-                onClick={() => {
-                  setShowFirstVisit(false);
-                  setMode("sketch");
-                }}
-                className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
-              >
-                Start Sketching
-              </button>
+            <div className="mt-8 flex flex-col gap-3">
               <button
                 onClick={() => {
                   setShowFirstVisit(false);
                   setShowGallery(true);
                 }}
-                className="rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                className="rounded-xl bg-mk-primary px-6 py-3 text-sm font-semibold text-white hover:bg-mk-primary-hover transition-colors"
               >
                 Browse Templates
               </button>
@@ -374,16 +400,24 @@ export function EmailBuilder() {
                   setShowFirstVisit(false);
                   setMode("builder");
                 }}
-                className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                className="rounded-xl border border-mk-border px-6 py-3 text-sm font-semibold text-mk-text hover:bg-mk-primary-50 transition-colors"
               >
                 Start from Scratch
+              </button>
+              <button
+                onClick={() => {
+                  setShowFirstVisit(false);
+                  setMode("sketch");
+                }}
+                className="text-sm text-mk-text-muted hover:text-mk-primary transition-colors"
+              >
+                Try the Sketch Canvas
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Toast notifications */}
       <Toast
         message={toast || ""}
         visible={!!toast}
