@@ -2,34 +2,96 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+
+  /* Design tokens */
+  --primary: #7c3aed;
+  --primary-light: #a78bfa;
+  --primary-dark: #6d28d9;
+  --primary-50: #f5f3ff;
+  --primary-100: #ede9fe;
+  --accent: #06b6d4;
+  --accent-light: #67e8f9;
+  --surface: #ffffff;
+  --surface-dim: #f8fafc;
+  --border: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: "Courier New", monospace;
+  --font-sans: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Roboto Mono", monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
+/* ── Smooth scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Animations ── */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideInLeft { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(124,58,237,0.3); } 70% { box-shadow: 0 0 0 6px rgba(124,58,237,0); } 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0); } }
+@keyframes dropPulse { 0%,100% { border-color: var(--primary-light); background-color: var(--primary-50); } 50% { border-color: var(--primary); background-color: var(--primary-100); } }
+@keyframes toolbarSlide { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+.animate-fadeInUp { animation: fadeInUp 0.25s ease-out; }
+.animate-fadeInDown { animation: fadeInDown 0.25s ease-out; }
+.animate-slideInLeft { animation: slideInLeft 0.25s ease-out; }
+.animate-slideInRight { animation: slideInRight 0.25s ease-out; }
+.animate-scaleIn { animation: scaleIn 0.2s ease-out; }
+.animate-toolbarSlide { animation: toolbarSlide 0.15s ease-out; }
+
+/* ── Glass effect ── */
+.glass { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+/* ── Focus ring ── */
+.focus-ring:focus-visible { outline: none; box-shadow: 0 0 0 2px white, 0 0 0 4px var(--primary); }
+
+/* ── Drag pulse ── */
+.drag-active { animation: dropPulse 1.5s ease-in-out infinite; }
+
+/* ── Selection ring ── */
+.selected-ring { box-shadow: 0 0 0 2px var(--primary), 0 0 0 4px rgba(124,58,237,0.15); }
+
+/* ── Range input ── */
+input[type="range"] { -webkit-appearance: none; appearance: none; height: 4px; background: #e2e8f0; border-radius: 4px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+
+/* ── Inline toolbar on elements ── */
+.element-wrapper:hover .element-toolbar { opacity: 1; pointer-events: auto; }
+.element-toolbar { opacity: 0; pointer-events: none; transition: opacity 0.15s ease, transform 0.15s ease; }
+
+/* ── Hover card effect ── */
+.hover-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.hover-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+/* ── Content editable placeholder ── */
+[contenteditable="true"]:empty::before { content: attr(data-placeholder); color: var(--text-muted); pointer-events: none; }
+
+/* ── Smooth transitions ── */
+button, a, input, select, textarea { transition: all 0.15s ease; }
