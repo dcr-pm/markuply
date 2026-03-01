@@ -315,8 +315,11 @@ export function ColumnsBlock({ element, onSelect, onChange }: ColumnsBlockProps)
   return (
     <div onClick={onSelect} className="cursor-pointer rounded-lg">
       <div
-        className="flex gap-2"
-        style={{ padding: element.styles.padding || "10px 0" }}
+        className="flex gap-2 flex-wrap"
+        style={{
+          padding: element.styles.padding || "10px 0",
+          backgroundColor: element.styles.backgroundColor || "transparent",
+        }}
       >
         {element.columns.map((col, i) => (
           <ColumnEditor

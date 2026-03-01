@@ -155,22 +155,38 @@ function generateGif(el: GifElement): string {
 }
 
 function generateTimer(el: TimerElement): string {
+  const fontFamily = el.styles.fontFamily || "Arial, sans-serif";
+  const fontSize = el.styles.fontSize || "28px";
   const containerStyle = inlineStyles({
-    "text-align": "center",
+    "text-align": el.styles.textAlign || "center",
     padding: el.styles.padding || "20px",
-    "font-family": "Arial, sans-serif",
+    "font-family": fontFamily,
   });
   const digitStyle = inlineStyles({
     display: "inline-block",
     "background-color": el.timerColor || "#4F46E5",
     color: "#ffffff",
-    "font-size": "28px",
+    "font-size": fontSize,
     "font-weight": "bold",
     padding: "12px 16px",
-    "border-radius": "8px",
+    "border-radius": el.styles.borderRadius || "8px",
     margin: "0 4px",
     "min-width": "48px",
     "text-align": "center",
+    "font-family": fontFamily,
+  });
+  const digitStyleMobile = inlineStyles({
+    display: "inline-block",
+    "background-color": el.timerColor || "#4F46E5",
+    color: "#ffffff",
+    "font-size": "18px",
+    "font-weight": "bold",
+    padding: "8px 10px",
+    "border-radius": el.styles.borderRadius || "8px",
+    margin: "0 2px",
+    "min-width": "36px",
+    "text-align": "center",
+    "font-family": fontFamily,
   });
   const labelStyle = inlineStyles({
     display: "block",
@@ -181,15 +197,35 @@ function generateTimer(el: TimerElement): string {
     "letter-spacing": "1px",
   });
 
+  // Calculate actual countdown values at export time
+  const diff = new Date(el.targetDate).getTime() - Date.now();
+  const days = diff > 0 ? Math.floor(diff / (1000 * 60 * 60 * 24)) : 0;
+  const hours = diff > 0 ? Math.floor((diff / (1000 * 60 * 60)) % 24) : 0;
+  const minutes = diff > 0 ? Math.floor((diff / (1000 * 60)) % 60) : 0;
+  const seconds = diff > 0 ? Math.floor((diff / 1000) % 60) : 0;
+  const pad = (n: number) => String(n).padStart(2, "0");
+
   return `
 <div style="${containerStyle}" data-timer-target="${el.targetDate}">
-  <p style="margin: 0 0 8px; font-size: 14px; color: ${el.labelColor || "#666666"};">${el.label}</p>
-  <div>
-    <span style="${digitStyle}">00<span style="${labelStyle}">Days</span></span>
-    <span style="${digitStyle}">00<span style="${labelStyle}">Hours</span></span>
-    <span style="${digitStyle}">00<span style="${labelStyle}">Min</span></span>
-    <span style="${digitStyle}">00<span style="${labelStyle}">Sec</span></span>
+  <p style="margin: 0 0 12px; font-size: 14px; color: ${el.labelColor || "#666666"}; font-family: ${fontFamily};">${el.label}</p>
+  <!--[if !mso]><!-->
+  <div class="timer-digits" style="display: inline-block;">
+    <span class="timer-digit" style="${digitStyle}">${pad(days)}<span style="${labelStyle}">Days</span></span>
+    <span class="timer-digit" style="${digitStyle}">${pad(hours)}<span style="${labelStyle}">Hours</span></span>
+    <span class="timer-digit" style="${digitStyle}">${pad(minutes)}<span style="${labelStyle}">Min</span></span>
+    <span class="timer-digit" style="${digitStyle}">${pad(seconds)}<span style="${labelStyle}">Sec</span></span>
   </div>
+  <!--<![endif]-->
+  <!--[if mso]>
+  <table role="presentation" cellpadding="0" cellspacing="4" border="0" align="center">
+    <tr>
+      <td style="${digitStyleMobile}">${pad(days)}<br/><span style="${labelStyle}">Days</span></td>
+      <td style="${digitStyleMobile}">${pad(hours)}<br/><span style="${labelStyle}">Hours</span></td>
+      <td style="${digitStyleMobile}">${pad(minutes)}<br/><span style="${labelStyle}">Min</span></td>
+      <td style="${digitStyleMobile}">${pad(seconds)}<br/><span style="${labelStyle}">Sec</span></td>
+    </tr>
+  </table>
+  <![endif]-->
 </div>`;
 }
 
@@ -220,14 +256,14 @@ function generateColumns(el: ColumnsElement): string {
     .map((col) => {
       const content = col.elements.map(generateElement).join("\n");
       return `
-    <td style="width: ${col.width || `${Math.floor(100 / colCount)}%`}; vertical-align: top; padding: 0 8px;">
+    <td class="stack-column" style="width: ${col.width || `${Math.floor(100 / colCount)}%`}; vertical-align: top; padding: 0 8px;">
       ${content}
     </td>`;
     })
     .join("");
 
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="columns-table">
   <tr>${cols}
   </tr>
 </table>`;
@@ -241,6 +277,7 @@ function generateFooter(el: FooterElement): string {
   const textColor = el.textColor || "#9ca3af";
   const dividerColor = el.dividerColor || "#e5e7eb";
   const bgColor = el.styles.backgroundColor || "#f9fafb";
+  const fontFamily = el.styles.fontFamily || "Arial, sans-serif";
 
   const socialHtml = el.showSocial && el.socialLinks.length > 0
     ? `<div style="text-align: center; padding: 0 0 16px;">
@@ -283,7 +320,7 @@ function generateFooter(el: FooterElement): string {
   return `
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
   <tr>
-    <td style="background-color: ${bgColor}; padding: 24px 20px; border-top: 1px solid ${dividerColor};">
+    <td style="background-color: ${bgColor}; padding: 24px 20px; border-top: 1px solid ${dividerColor}; font-family: ${fontFamily};">
       ${socialHtml}
       ${linksHtml}
       ${addressHtml}
@@ -304,12 +341,13 @@ function generateHeader(el: HeaderElement): string {
   const logoPosition = el.logoPosition || "left";
   const navPosition = el.navPosition || "right";
   const borderBottom = el.borderBottom || "";
+  const fontFamily = el.styles.fontFamily || "Arial, sans-serif";
 
   // ── Announcement Bar ──
   const announcementHtml = el.showAnnouncement && el.announcementText
     ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
         <tr>
-          <td style="background-color: ${el.announcementBg || "#4F46E5"}; color: ${el.announcementTextColor || "#ffffff"}; font-size: 12px; font-weight: 600; text-align: center; padding: 8px 16px; letter-spacing: 0.5px; font-family: Arial, sans-serif;">
+          <td style="background-color: ${el.announcementBg || "#4F46E5"}; color: ${el.announcementTextColor || "#ffffff"}; font-size: 12px; font-weight: 600; text-align: center; padding: 8px 16px; letter-spacing: 0.5px; font-family: ${fontFamily};">
             ${el.announcementText}
           </td>
         </tr>
@@ -317,12 +355,12 @@ function generateHeader(el: HeaderElement): string {
 
   // ── Preheader ──
   const preheaderHtml = el.preheaderText
-    ? `<p style="margin: 0 0 12px; font-size: 11px; color: #9ca3af; text-align: center; font-family: Arial, sans-serif;">${el.preheaderText}</p>` : "";
+    ? `<p style="margin: 0 0 12px; font-size: 11px; color: #9ca3af; text-align: center; font-family: ${fontFamily};">${el.preheaderText}</p>` : "";
 
   // ── Logo + Tagline ──
   const logoWidth = parseInt(el.logoWidth || "180");
   const taglineHtml = el.tagline
-    ? `<p style="margin: 4px 0 0; font-size: ${el.taglineFontSize || "12px"}; color: ${el.taglineColor || "#6b7280"}; font-family: Arial, sans-serif;">${el.tagline}</p>` : "";
+    ? `<p style="margin: 4px 0 0; font-size: ${el.taglineFontSize || "12px"}; color: ${el.taglineColor || "#6b7280"}; font-family: ${fontFamily};">${el.tagline}</p>` : "";
   const logoBlockHtml = `<div style="display: inline-block;">
     <img src="${el.logoSrc}" alt="${el.logoAlt}" width="${logoWidth}" style="display: block; border: 0; height: auto;" />
     ${taglineHtml}
@@ -333,21 +371,21 @@ function generateHeader(el: HeaderElement): string {
   const navLinkHtml = navLinks.length > 0
     ? navLinks.map((link) => {
         if (navStyle === "pills") {
-          return `<a href="${link.url}" style="display: inline-block; color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; background-color: ${navColor}18; padding: 5px 14px; border-radius: 999px; margin: 0 3px; font-family: Arial, sans-serif;">${link.label}</a>`;
+          return `<a href="${link.url}" style="display: inline-block; color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; background-color: ${navColor}18; padding: 5px 14px; border-radius: 999px; margin: 0 3px; font-family: ${fontFamily};">${link.label}</a>`;
         }
         if (navStyle === "underline") {
-          return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; border-bottom: 2px solid ${navColor}; padding-bottom: 2px; margin: 0 10px; font-family: Arial, sans-serif;">${link.label}</a>`;
+          return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; border-bottom: 2px solid ${navColor}; padding-bottom: 2px; margin: 0 10px; font-family: ${fontFamily};">${link.label}</a>`;
         }
         if (navStyle === "bold") {
-          return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; font-weight: 700; margin: 0 10px; font-family: Arial, sans-serif;">${link.label}</a>`;
+          return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; font-weight: 700; margin: 0 10px; font-family: ${fontFamily};">${link.label}</a>`;
         }
-        return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; margin: 0 10px; font-family: Arial, sans-serif;">${link.label}</a>`;
+        return `<a href="${link.url}" style="color: ${navColor}; font-size: ${navFontSize}; text-decoration: none; margin: 0 10px; font-family: ${fontFamily};">${link.label}</a>`;
       }).join("")
     : "";
 
   // ── CTA Button ──
   const ctaHtml = el.showCta && el.ctaText
-    ? `<a href="${el.ctaUrl || "#"}" style="display: inline-block; background-color: ${el.ctaColor || "#4F46E5"}; color: ${el.ctaTextColor || "#ffffff"}; padding: 8px 20px; border-radius: ${el.ctaBorderRadius || "6px"}; font-size: 13px; font-weight: 600; text-decoration: none; margin-left: 12px; font-family: Arial, sans-serif;">${el.ctaText}</a>`
+    ? `<a href="${el.ctaUrl || "#"}" style="display: inline-block; background-color: ${el.ctaColor || "#4F46E5"}; color: ${el.ctaTextColor || "#ffffff"}; padding: 8px 20px; border-radius: ${el.ctaBorderRadius || "6px"}; font-size: 13px; font-weight: 600; text-decoration: none; margin-left: 12px; font-family: ${fontFamily};">${el.ctaText}</a>`
     : "";
 
   const isCentered = logoPosition === "center";
@@ -497,14 +535,35 @@ export function generateEmailHtml(template: EmailTemplate): string {
   </noscript>
   <![endif]-->
   <style type="text/css">
+    /* Reset & normalize */
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
     body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; }
+    /* Remove blue links on iOS */
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+    /* Samsung Mail link fix */
+    #MessageViewBody a { color: inherit; text-decoration: none; font-size: inherit; font-family: inherit; font-weight: inherit; line-height: inherit; }
+    /* Mobile responsive */
     @media only screen and (max-width: 620px) {
       .email-container { width: 100% !important; max-width: 100% !important; }
+      .email-container td { padding-left: 16px !important; padding-right: 16px !important; }
       .fluid { max-width: 100% !important; height: auto !important; }
-      .stack-column { display: block !important; width: 100% !important; max-width: 100% !important; }
+      .stack-column { display: block !important; width: 100% !important; max-width: 100% !important; padding: 0 !important; margin-bottom: 12px !important; }
+      .timer-digit { font-size: 18px !important; padding: 8px 10px !important; min-width: 36px !important; margin: 0 2px !important; }
+      h1 { font-size: 24px !important; }
+      h2 { font-size: 20px !important; }
+      h3 { font-size: 18px !important; }
+    }
+    /* Tablet breakpoint */
+    @media only screen and (max-width: 480px) {
+      .email-container td { padding-left: 12px !important; padding-right: 12px !important; }
+      .timer-digit { font-size: 16px !important; padding: 6px 8px !important; min-width: 32px !important; }
+    }
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      body { background-color: #1a1a2e !important; }
+      .email-container { background-color: #16213e !important; }
     }
   </style>
 </head>

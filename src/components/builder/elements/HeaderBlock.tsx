@@ -16,6 +16,7 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
   const logoPosition = element.logoPosition || "left";
   const navPosition = element.navPosition || "right";
   const navStyle = element.navStyle || "text";
+  const fontFamily = element.styles.fontFamily || "Arial, sans-serif";
 
   const renderNavLink = (link: { label: string; url: string }, i: number, total: number) => {
     const baseStyle: React.CSSProperties = {
@@ -24,6 +25,7 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
       cursor: "pointer",
       textDecoration: "none",
       fontWeight: navStyle === "bold" ? "700" : "normal",
+      fontFamily,
     };
 
     if (navStyle === "pills") {
@@ -92,6 +94,7 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
         alt={element.logoAlt}
         style={{
           width: element.logoWidth || "180px",
+          maxWidth: "100%",
           height: "auto",
           display: "block",
         }}
@@ -148,6 +151,7 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
             textAlign: "center",
             padding: "8px 16px",
             letterSpacing: "0.5px",
+            fontFamily,
           }}
         >
           {element.announcementText}
@@ -163,7 +167,7 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
       >
         {/* Preheader text */}
         {element.preheaderText && (
-          <p style={{ fontSize: "11px", color: "#9ca3af", textAlign: "center", margin: "0 0 12px" }}>
+          <p style={{ fontSize: "11px", color: "#9ca3af", textAlign: "center", margin: "0 0 12px", fontFamily }}>
             {element.preheaderText}
           </p>
         )}
@@ -188,6 +192,8 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
               flexWrap: "wrap",
               padding: "0 8px",
               flexDirection: logoPosition === "right" ? "row-reverse" : "row",
+              gap: "8px",
+              fontFamily,
             }}
           >
             {logoBlock}

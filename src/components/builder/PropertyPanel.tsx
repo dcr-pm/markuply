@@ -120,8 +120,69 @@ function renderProperties(
   const commonStyleFields = (
     <div className="space-y-3 border-t border-mk-border-light pt-3 mt-3">
       <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">
-        Style
+        Typography
       </p>
+      <SelectField
+        label="Font Family"
+        value={element.styles.fontFamily || "Arial, sans-serif"}
+        options={[
+          { label: "Arial", value: "Arial, sans-serif" },
+          { label: "Helvetica", value: "Helvetica, Arial, sans-serif" },
+          { label: "Georgia", value: "Georgia, serif" },
+          { label: "Times New Roman", value: "'Times New Roman', Times, serif" },
+          { label: "Verdana", value: "Verdana, Geneva, sans-serif" },
+          { label: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
+          { label: "Courier New", value: "'Courier New', Courier, monospace" },
+          { label: "Tahoma", value: "Tahoma, Geneva, sans-serif" },
+          { label: "Lucida Sans", value: "'Lucida Sans Unicode', 'Lucida Grande', sans-serif" },
+          { label: "Palatino", value: "'Palatino Linotype', 'Book Antiqua', Palatino, serif" },
+          { label: "Garamond", value: "Garamond, serif" },
+          { label: "System UI", value: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+        ]}
+        onChange={(v) => updateStyles("fontFamily", v)}
+      />
+      <InputField
+        label="Font Size"
+        value={element.styles.fontSize || "16px"}
+        onChange={(v) => updateStyles("fontSize", v)}
+      />
+      <ColorField
+        label="Text Color"
+        value={element.styles.color || "#333333"}
+        onChange={(v) => updateStyles("color", v)}
+      />
+      <SelectField
+        label="Font Weight"
+        value={element.styles.fontWeight || "normal"}
+        options={[
+          { label: "Light (300)", value: "300" },
+          { label: "Normal (400)", value: "normal" },
+          { label: "Medium (500)", value: "500" },
+          { label: "Semi-Bold (600)", value: "600" },
+          { label: "Bold (700)", value: "bold" },
+          { label: "Extra-Bold (800)", value: "800" },
+        ]}
+        onChange={(v) => updateStyles("fontWeight", v)}
+      />
+      <InputField
+        label="Line Height"
+        value={element.styles.lineHeight || "1.5"}
+        onChange={(v) => updateStyles("lineHeight", v)}
+      />
+
+      <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest pt-2">
+        Layout
+      </p>
+      <SelectField
+        label="Position / Text Align"
+        value={element.styles.textAlign || "left"}
+        options={[
+          { label: "Left", value: "left" },
+          { label: "Center", value: "center" },
+          { label: "Right", value: "right" },
+        ]}
+        onChange={(v) => updateStyles("textAlign", v)}
+      />
       <ColorField
         label="Background Color"
         value={element.styles.backgroundColor || "#ffffff"}
@@ -132,15 +193,10 @@ function renderProperties(
         value={element.styles.padding || "10px 0"}
         onChange={(v) => updateStyles("padding", v)}
       />
-      <SelectField
-        label="Text Align"
-        value={element.styles.textAlign || "left"}
-        options={[
-          { label: "Left", value: "left" },
-          { label: "Center", value: "center" },
-          { label: "Right", value: "right" },
-        ]}
-        onChange={(v) => updateStyles("textAlign", v)}
+      <InputField
+        label="Border Radius"
+        value={element.styles.borderRadius || "0"}
+        onChange={(v) => updateStyles("borderRadius", v)}
       />
     </div>
   );
@@ -399,6 +455,11 @@ function renderProperties(
             value={element.labelColor || "#666666"}
             onChange={(v) => onChange({ ...element, labelColor: v })}
           />
+          <InputField
+            label="Digit Font Size"
+            value={element.styles.fontSize || "24px"}
+            onChange={(v) => updateStyles("fontSize", v)}
+          />
           {commonStyleFields}
         </div>
       );
@@ -523,7 +584,70 @@ function renderProperties(
         </div>
       );
 
-    case "header":
+    case "header": {
+      const applyPreset = (variant: HeaderElement["variant"]) => {
+        const presets: Record<HeaderElement["variant"], Partial<HeaderElement>> = {
+          "logo-nav": {
+            logoPosition: "left",
+            navPosition: "right",
+            navStyle: "text",
+            showCta: false,
+            showAnnouncement: false,
+          },
+          "logo-only": {
+            logoPosition: "center",
+            navPosition: "below",
+            navStyle: "text",
+            showCta: false,
+            showAnnouncement: false,
+            navLinks: [],
+          },
+          "centered": {
+            logoPosition: "center",
+            navPosition: "below",
+            navStyle: "text",
+            showCta: false,
+            showAnnouncement: false,
+          },
+          "full": {
+            logoPosition: "left",
+            navPosition: "right",
+            navStyle: "text",
+            showCta: true,
+            showAnnouncement: true,
+            announcementText: element.announcementText || "Free shipping on orders over $50!",
+          },
+          "minimal": {
+            logoPosition: "left",
+            navPosition: "right",
+            navStyle: "text",
+            showCta: false,
+            showAnnouncement: false,
+            borderBottom: "1px solid #e5e7eb",
+          },
+          "bold": {
+            logoPosition: "left",
+            navPosition: "right",
+            navStyle: "bold",
+            showCta: true,
+            showAnnouncement: false,
+            backgroundColor: "#1A1625",
+            textColor: "#ffffff",
+            navColor: "#ffffff",
+          },
+          "ecommerce": {
+            logoPosition: "center",
+            navPosition: "below",
+            navStyle: "pills",
+            showCta: true,
+            ctaText: "Shop Now",
+            showAnnouncement: true,
+            announcementText: element.announcementText || "New collection available - Shop now!",
+          },
+        };
+        onChange({ ...element, variant, ...presets[variant] });
+      };
+
       return (
         <div className="space-y-3">
           <SelectField
@@ -538,7 +662,7 @@ function renderProperties(
               { label: "Bold", value: "bold" },
               { label: "E-commerce", value: "ecommerce" },
             ]}
-            onChange={(v) => onChange({ ...element, variant: v as HeaderElement["variant"] })}
+            onChange={(v) => applyPreset(v as HeaderElement["variant"])}
           />
 
           {/* ── Announcement Bar ── */}
@@ -778,6 +902,7 @@ function renderProperties(
           </div>
         </div>
       );
+    }
 
     default:
       return null;

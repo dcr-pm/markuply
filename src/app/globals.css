@@ -198,3 +198,68 @@ body {
 .mk-panel-slide {
   animation: mk-slide-in-right 0.2s ease-out;
 }
+
+/* ── Builder Responsive Layout ── */
+@media (max-width: 1024px) {
+  .mk-inline-toolbar {
+    top: -40px;
+    gap: 1px;
+    padding: 3px;
+  }
+  .mk-inline-toolbar button {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mk-inline-toolbar {
+    top: -36px;
+    gap: 0;
+    padding: 2px;
+  }
+  .mk-inline-toolbar button {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  .mk-inline-toolbar .mk-tb-divider {
+    height: 16px;
+  }
+}
+
+/* ── Touch-friendly interactions ── */
+@media (hover: none) and (pointer: coarse) {
+  .mk-element {
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mk-element:active {
+    box-shadow: 0 0 0 2px var(--mk-primary-200);
+  }
+}
+
+/* ── Reduced motion preference ── */
+@media (prefers-reduced-motion: reduce) {
+  .mk-element,
+  .mk-panel-slide,
+  .mk-drop-zone-active {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── Cross-browser smooth scrolling ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mk-border) transparent;
+}
+
+/* ── Safe area insets for notched devices ── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

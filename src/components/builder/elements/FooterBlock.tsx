@@ -12,6 +12,8 @@ interface FooterBlockProps {
 export function FooterBlock({ element, onSelect }: FooterBlockProps) {
   const textColor = element.textColor || "#9ca3af";
   const dividerColor = element.dividerColor || "#e5e7eb";
+  const fontFamily = element.styles.fontFamily || "Arial, sans-serif";
+  const fontSize = element.styles.fontSize || "12px";
 
   return (
     <div onClick={onSelect} className="cursor-pointer rounded-lg">
@@ -21,6 +23,8 @@ export function FooterBlock({ element, onSelect }: FooterBlockProps) {
           padding: "24px 20px",
           textAlign: "center",
           borderTop: `1px solid ${dividerColor}`,
+          fontFamily,
+          fontSize,
         }}
       >
         {/* Social icons */}

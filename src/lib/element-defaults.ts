@@ -9,7 +9,7 @@ export const ELEMENT_PALETTE: DragItem[] = [
     defaultProps: {
       content: "Your Heading Here",
       level: 1,
-      styles: { fontSize: "32px", color: "#111111", textAlign: "left", padding: "10px 0" },
+      styles: { fontSize: "32px", color: "#111111", textAlign: "left", padding: "10px 0", fontFamily: "Arial, sans-serif" },
     },
   },
   {
@@ -18,7 +18,7 @@ export const ELEMENT_PALETTE: DragItem[] = [
     icon: "T",
     defaultProps: {
       content: "Your text content goes here. Click to edit and add your message.",
-      styles: { fontSize: "16px", color: "#333333", padding: "10px 0", lineHeight: "1.6" },
+      styles: { fontSize: "16px", color: "#333333", padding: "10px 0", lineHeight: "1.6", fontFamily: "Arial, sans-serif" },
     },
   },
   {
@@ -41,7 +41,7 @@ export const ELEMENT_PALETTE: DragItem[] = [
       buttonColor: "#4F46E5",
       textColor: "#ffffff",
       borderRadius: "6px",
-      styles: { textAlign: "center", padding: "10px 0" },
+      styles: { textAlign: "center", padding: "10px 0", fontFamily: "Arial, sans-serif" },
     },
   },
   {
@@ -94,7 +94,7 @@ export const ELEMENT_PALETTE: DragItem[] = [
       label: "Offer ends in",
       timerColor: "#4F46E5",
       labelColor: "#666666",
-      styles: { padding: "20px 0" },
+      styles: { padding: "20px 0", fontFamily: "Arial, sans-serif", fontSize: "24px" },
     },
   },
   {
@@ -160,7 +160,7 @@ export const ELEMENT_PALETTE: DragItem[] = [
       showAddress: true,
       textColor: "#9ca3af",
       dividerColor: "#e5e7eb",
-      styles: { padding: "0", backgroundColor: "#f9fafb" },
+      styles: { padding: "0", backgroundColor: "#f9fafb", fontFamily: "Arial, sans-serif" },
     },
   },
   {
@@ -200,7 +200,7 @@ export const ELEMENT_PALETTE: DragItem[] = [
       backgroundColor: "#ffffff",
       textColor: "#374151",
       borderBottom: "",
-      styles: { padding: "16px 0" },
+      styles: { padding: "16px 0", fontFamily: "Arial, sans-serif" },
     },
   },
 ];
