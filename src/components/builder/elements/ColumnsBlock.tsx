@@ -88,7 +88,7 @@ function ColumnEditor({
 
   return (
     <div
-      className="flex flex-col gap-1.5 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 p-2 min-h-[80px]"
+      className="flex flex-col gap-1.5 rounded-lg border-2 border-dashed border-mk-border bg-mk-bg/50 p-2 min-h-[80px]"
       style={{ width: column.width }}
       onDragOver={(e) => {
         e.preventDefault();
@@ -102,25 +102,25 @@ function ColumnEditor({
       }}
       onDrop={(e) => handleColumnDrop(e, column.elements.length)}
     >
-      <div className="text-[10px] font-semibold text-gray-400 uppercase text-center">
+      <div className="text-[10px] font-semibold text-mk-text-muted uppercase text-center">
         Col {columnIndex + 1}
       </div>
 
       {/* Existing elements in this column — with drag-and-drop */}
       {column.elements.map((el, idx) => (
         <div key={el.id}>
-          {/* Drop zone above element — always has hit area */}
+          {/* Drop zone above element */}
           <div
             onDragOver={(e) => handleColumnDragOver(e, idx)}
             onDrop={(e) => handleColumnDrop(e, idx)}
             className={`transition-all rounded ${
               dropIndex === idx
-                ? "min-h-[6px] bg-indigo-400/30 border border-dashed border-indigo-400 my-0.5"
+                ? "min-h-[6px] bg-mk-primary/20 border border-dashed border-mk-primary my-0.5"
                 : "min-h-[3px]"
             }`}
           />
           <div
-            className="group relative rounded-md border border-gray-200 bg-white p-2 text-xs"
+            className="group relative rounded-md border border-mk-border bg-white p-2 text-xs"
             draggable
             onDragStart={(e) => {
               e.stopPropagation();
@@ -138,37 +138,37 @@ function ColumnEditor({
           >
             <div className="flex items-center gap-1.5">
               {/* Drag handle */}
-              <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0" title="Drag to reorder">
+              <div className="cursor-grab active:cursor-grabbing text-mk-text-muted hover:text-mk-text-secondary shrink-0" title="Drag to reorder">
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
                   <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
                   <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
                 </svg>
               </div>
-              <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600 uppercase">
+              <span className="rounded bg-mk-primary-50 px-1.5 py-0.5 text-[9px] font-bold text-mk-primary uppercase">
                 {el.type}
               </span>
-              <span className="flex-1 truncate text-gray-600">
+              <span className="flex-1 truncate text-mk-text-secondary">
                 {getElementPreview(el)}
               </span>
               <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={(e) => { e.stopPropagation(); handleMoveElement(el.id, "up"); }}
                   disabled={idx === 0}
-                  className="rounded p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                  className="rounded p-0.5 text-mk-text-muted hover:text-mk-text disabled:opacity-30"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6" /></svg>
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleMoveElement(el.id, "down"); }}
                   disabled={idx === column.elements.length - 1}
-                  className="rounded p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                  className="rounded p-0.5 text-mk-text-muted hover:text-mk-text disabled:opacity-30"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDeleteElement(el.id); }}
-                  className="rounded p-0.5 text-gray-400 hover:text-red-500"
+                  className="rounded p-0.5 text-mk-text-muted hover:text-mk-accent"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                 </button>
@@ -178,14 +178,14 @@ function ColumnEditor({
         </div>
       ))}
 
-      {/* Final drop zone — always has hit area */}
+      {/* Final drop zone */}
       {column.elements.length > 0 && (
         <div
           onDragOver={(e) => handleColumnDragOver(e, column.elements.length)}
           onDrop={(e) => handleColumnDrop(e, column.elements.length)}
           className={`transition-all rounded ${
             dropIndex === column.elements.length
-              ? "min-h-[6px] bg-indigo-400/30 border border-dashed border-indigo-400 my-0.5"
+              ? "min-h-[6px] bg-mk-primary/20 border border-dashed border-mk-primary my-0.5"
               : "min-h-[3px]"
           }`}
         />
@@ -193,7 +193,7 @@ function ColumnEditor({
 
       {/* AI Prompt bar for this column */}
       {showPrompt ? (
-        <div className="rounded-lg border border-indigo-200 bg-white p-2" onClick={(e) => e.stopPropagation()}>
+        <div className="rounded-lg border border-mk-primary/30 bg-white p-2" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-1.5">
             <input
               value={prompt}
@@ -203,20 +203,20 @@ function ColumnEditor({
                 if (e.key === "Escape") setShowPrompt(false);
               }}
               placeholder='e.g. "flash sale timer"'
-              className="flex-1 border-0 bg-transparent text-xs text-gray-800 placeholder-gray-400 focus:outline-none"
+              className="flex-1 border-0 bg-transparent text-xs text-mk-text placeholder-mk-text-muted focus:outline-none"
               autoFocus
             />
             {prompt.trim() && (
               <button
                 onClick={handleGenerate}
-                className="shrink-0 rounded bg-indigo-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-indigo-700"
+                className="shrink-0 rounded bg-mk-primary px-2 py-1 text-[10px] font-medium text-white hover:bg-mk-primary-hover"
               >
                 Add
               </button>
             )}
             <button
               onClick={() => setShowPrompt(false)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-mk-text-muted hover:text-mk-text"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
@@ -226,7 +226,7 @@ function ColumnEditor({
               <button
                 key={s.label}
                 onClick={() => handleSuggestion(s.prompt)}
-                className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[9px] font-medium text-gray-500 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                className="rounded-full border border-mk-border bg-mk-bg px-2 py-0.5 text-[9px] font-medium text-mk-text-secondary hover:border-mk-primary/40 hover:bg-mk-primary-50 hover:text-mk-primary transition-colors"
               >
                 {s.icon} {s.label}
               </button>
@@ -239,7 +239,7 @@ function ColumnEditor({
             e.stopPropagation();
             setShowPrompt(true);
           }}
-          className="flex items-center justify-center gap-1 rounded-md border border-dashed border-gray-300 px-2 py-1.5 text-[10px] text-gray-400 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+          className="flex items-center justify-center gap-1 rounded-md border border-dashed border-mk-border px-2 py-1.5 text-[10px] text-mk-text-muted hover:border-mk-primary hover:bg-mk-primary-50 hover:text-mk-primary transition-colors"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12" />
@@ -282,7 +282,7 @@ function getElementPreview(el: EmailElement): string {
   }
 }
 
-export function ColumnsBlock({ element, selected, onSelect, onChange }: ColumnsBlockProps) {
+export function ColumnsBlock({ element, onSelect, onChange }: ColumnsBlockProps) {
   const handleColumnChange = (index: number, col: ColumnConfig) => {
     const newColumns = [...element.columns];
     newColumns[index] = col;
@@ -313,12 +313,7 @@ export function ColumnsBlock({ element, selected, onSelect, onChange }: ColumnsB
   };
 
   return (
-    <div
-      onClick={onSelect}
-      className={`group relative cursor-pointer rounded-lg transition-all ${
-        selected ? "ring-2 ring-indigo-500 ring-offset-2" : "hover:ring-2 hover:ring-gray-300"
-      }`}
-    >
+    <div onClick={onSelect} className="cursor-pointer rounded-lg">
       <div
         className="flex gap-2"
         style={{ padding: element.styles.padding || "10px 0" }}
@@ -334,11 +329,6 @@ export function ColumnsBlock({ element, selected, onSelect, onChange }: ColumnsB
           />
         ))}
       </div>
-      {selected && (
-        <div className="absolute -top-3 left-2 rounded bg-indigo-600 px-2 py-0.5 text-[10px] font-medium text-white">
-          {element.columns.length}-Column Layout · Drag elements between columns
-        </div>
-      )}
     </div>
   );
 }

@@ -9,17 +9,12 @@ interface FooterBlockProps {
   onChange: (el: FooterElement) => void;
 }
 
-export function FooterBlock({ element, selected, onSelect }: FooterBlockProps) {
+export function FooterBlock({ element, onSelect }: FooterBlockProps) {
   const textColor = element.textColor || "#9ca3af";
   const dividerColor = element.dividerColor || "#e5e7eb";
 
   return (
-    <div
-      onClick={onSelect}
-      className={`group relative cursor-pointer rounded-lg transition-all ${
-        selected ? "ring-2 ring-indigo-500 ring-offset-2" : "hover:ring-2 hover:ring-gray-300"
-      }`}
-    >
+    <div onClick={onSelect} className="cursor-pointer rounded-lg">
       <div
         style={{
           backgroundColor: element.styles.backgroundColor || "#f9fafb",
@@ -100,12 +95,6 @@ export function FooterBlock({ element, selected, onSelect }: FooterBlockProps) {
           </p>
         )}
       </div>
-
-      {selected && (
-        <div className="absolute -top-3 left-2 rounded bg-indigo-600 px-2 py-0.5 text-[10px] font-medium text-white">
-          Footer ({element.variant})
-        </div>
-      )}
     </div>
   );
 }

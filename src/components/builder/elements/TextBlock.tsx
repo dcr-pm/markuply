@@ -9,14 +9,9 @@ interface TextBlockProps {
   onChange: (el: TextElement) => void;
 }
 
-export function TextBlock({ element, selected, onSelect, onChange }: TextBlockProps) {
+export function TextBlock({ element, onSelect, onChange }: TextBlockProps) {
   return (
-    <div
-      onClick={onSelect}
-      className={`group relative cursor-pointer rounded-lg transition-all ${
-        selected ? "ring-2 ring-indigo-500 ring-offset-2" : "hover:ring-2 hover:ring-gray-300"
-      }`}
-    >
+    <div onClick={onSelect} className="cursor-pointer rounded-lg">
       <div
         contentEditable
         suppressContentEditableWarning
@@ -37,11 +32,6 @@ export function TextBlock({ element, selected, onSelect, onChange }: TextBlockPr
       >
         {element.content}
       </div>
-      {selected && (
-        <div className="absolute -top-3 left-2 rounded bg-indigo-600 px-2 py-0.5 text-[10px] font-medium text-white">
-          Text
-        </div>
-      )}
     </div>
   );
 }

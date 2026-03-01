@@ -9,16 +9,11 @@ interface HeadingBlockProps {
   onChange: (el: HeadingElement) => void;
 }
 
-export function HeadingBlock({ element, selected, onSelect, onChange }: HeadingBlockProps) {
+export function HeadingBlock({ element, onSelect, onChange }: HeadingBlockProps) {
   const sizes: Record<number, string> = { 1: "32px", 2: "24px", 3: "20px" };
 
   return (
-    <div
-      onClick={onSelect}
-      className={`group relative cursor-pointer rounded-lg transition-all ${
-        selected ? "ring-2 ring-indigo-500 ring-offset-2" : "hover:ring-2 hover:ring-gray-300"
-      }`}
-    >
+    <div onClick={onSelect} className="cursor-pointer rounded-lg">
       <div
         contentEditable
         suppressContentEditableWarning
@@ -38,11 +33,6 @@ export function HeadingBlock({ element, selected, onSelect, onChange }: HeadingB
       >
         {element.content}
       </div>
-      {selected && (
-        <div className="absolute -top-3 left-2 rounded bg-indigo-600 px-2 py-0.5 text-[10px] font-medium text-white">
-          H{element.level}
-        </div>
-      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ interface HeaderBlockProps {
   onChange: (el: HeaderElement) => void;
 }
 
-export function HeaderBlock({ element, selected, onSelect }: HeaderBlockProps) {
+export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
   const textColor = element.textColor || "#374151";
   const navColor = element.navColor || textColor;
   const navFontSize = element.navFontSize || "13px";
@@ -136,12 +136,7 @@ export function HeaderBlock({ element, selected, onSelect }: HeaderBlockProps) {
   const isNavBelow = navPosition === "below";
 
   return (
-    <div
-      onClick={onSelect}
-      className={`group relative cursor-pointer rounded-lg transition-all ${
-        selected ? "ring-2 ring-indigo-500 ring-offset-2" : "hover:ring-2 hover:ring-gray-300"
-      }`}
-    >
+    <div onClick={onSelect} className="cursor-pointer rounded-lg">
       {/* Announcement Bar */}
       {element.showAnnouncement && element.announcementText && (
         <div
@@ -218,12 +213,6 @@ export function HeaderBlock({ element, selected, onSelect }: HeaderBlockProps) {
           </div>
         )}
       </div>
-
-      {selected && (
-        <div className="absolute -top-3 left-2 rounded bg-indigo-600 px-2 py-0.5 text-[10px] font-medium text-white">
-          Header ({element.variant})
-        </div>
-      )}
     </div>
   );
 }
