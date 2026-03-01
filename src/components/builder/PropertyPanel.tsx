@@ -716,16 +716,6 @@ function renderProperties(
               value={element.logoWidth || "180px"}
               onChange={(v) => onChange({ ...element, logoWidth: v })}
             />
-            <SelectField
-              label="Position"
-              value={element.logoPosition || "left"}
-              options={[
-                { label: "Left", value: "left" },
-                { label: "Center", value: "center" },
-                { label: "Right", value: "right" },
-              ]}
-              onChange={(v) => onChange({ ...element, logoPosition: v as "left" | "center" | "right" })}
-            />
           </div>
 
           {/* ── Tagline ── */}
@@ -755,17 +745,6 @@ function renderProperties(
           {/* ── Navigation ── */}
           <div className="space-y-2 border-t border-mk-border-light pt-3">
             <p className="text-[10px] font-semibold text-mk-text-muted uppercase tracking-widest">Navigation</p>
-            <SelectField
-              label="Nav Position"
-              value={element.navPosition || "right"}
-              options={[
-                { label: "Right", value: "right" },
-                { label: "Left", value: "left" },
-                { label: "Center", value: "center" },
-                { label: "Below Logo", value: "below" },
-              ]}
-              onChange={(v) => onChange({ ...element, navPosition: v as "left" | "center" | "right" | "below" })}
-            />
             <SelectField
               label="Nav Style"
               value={element.navStyle || "text"}

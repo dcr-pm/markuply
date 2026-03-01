@@ -9,14 +9,116 @@ interface HeaderBlockProps {
   onChange: (el: HeaderElement) => void;
 }
 
+// Variant-based layout defaults — the variant is the source of truth
+const VARIANT_DEFAULTS: Record<
+  HeaderElement["variant"],
+  {
+    logoPosition: "left" | "center" | "right";
+    navPosition: "left" | "center" | "right" | "below";
+    navStyle: "text" | "pills" | "underline" | "bold";
+    showCta: boolean;
+    showAnnouncement: boolean;
+    hideNav: boolean;
+    bgColor: string;
+    textColor: string;
+    borderBottom: string;
+  }
+> = {
+  "logo-nav": {
+    logoPosition: "left",
+    navPosition: "right",
+    navStyle: "text",
+    showCta: false,
+    showAnnouncement: false,
+    hideNav: false,
+    bgColor: "#ffffff",
+    textColor: "#374151",
+    borderBottom: "",
+  },
+  "logo-only": {
+    logoPosition: "center",
+    navPosition: "below",
+    navStyle: "text",
+    showCta: false,
+    showAnnouncement: false,
+    hideNav: true,
+    bgColor: "#ffffff",
+    textColor: "#374151",
+    borderBottom: "",
+  },
+  centered: {
+    logoPosition: "center",
+    navPosition: "below",
+    navStyle: "text",
+    showCta: false,
+    showAnnouncement: false,
+    hideNav: false,
+    bgColor: "#ffffff",
+    textColor: "#374151",
+    borderBottom: "",
+  },
+  full: {
+    logoPosition: "left",
+    navPosition: "right",
+    navStyle: "text",
+    showCta: true,
+    showAnnouncement: true,
+    hideNav: false,
+    bgColor: "#ffffff",
+    textColor: "#374151",
+    borderBottom: "",
+  },
+  minimal: {
+    logoPosition: "left",
+    navPosition: "right",
+    navStyle: "text",
+    showCta: false,
+    showAnnouncement: false,
+    hideNav: false,
+    bgColor: "#ffffff",
+    textColor: "#374151",
+    borderBottom: "1px solid #e5e7eb",
+  },
+  bold: {
+    logoPosition: "left",
+    navPosition: "right",
+    navStyle: "bold",
+    showCta: true,
+    showAnnouncement: false,
+    hideNav: false,
+    bgColor: "#1A1625",
+    textColor: "#ffffff",
+    borderBottom: "",
+  },
+  ecommerce: {
+    logoPosition: "center",
+    navPosition: "below",
+    navStyle: "pills",
+    showCta: true,
+    showAnnouncement: true,
+    hideNav: false,
+    bgColor: "#ffffff",
+    textColor: "#374151",
+    borderBottom: "",
+  },
+};
+
 export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
-  const textColor = element.textColor || "#374151";
+  const variant = element.variant || "logo-nav";
+  const defaults = VARIANT_DEFAULTS[variant];
+
+  // Variant drives the layout — these are the resolved values
+  const logoPosition = defaults.logoPosition;
+  const navPosition = defaults.navPosition;
+  const navStyle = element.navStyle || defaults.navStyle;
+  const showCta = element.showCta ?? defaults.showCta;
+  const showAnnouncement = element.showAnnouncement ?? defaults.showAnnouncement;
+  const bgColor = element.backgroundColor || defaults.bgColor;
+  const textColor = element.textColor || defaults.textColor;
   const navColor = element.navColor || textColor;
   const navFontSize = element.navFontSize || "13px";
-  const logoPosition = element.logoPosition || "left";
-  const navPosition = element.navPosition || "right";
-  const navStyle = element.navStyle || "text";
   const fontFamily = element.styles.fontFamily || "Arial, sans-serif";
+  const borderBottom = element.borderBottom || defaults.borderBottom;
 
   const renderNavLink = (link: { label: string; url: string }, i: number, total: number) => {
     const baseStyle: React.CSSProperties = {
@@ -75,7 +177,8 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
   };
 
   const navLinks = element.navLinks || [];
-  const navBlock = navLinks.length > 0 ? (
+  const hideNav = defaults.hideNav;
+  const navBlock = !hideNav && navLinks.length > 0 ? (
     <div
       style={{
         textAlign: navPosition === "below" ? (logoPosition === "center" ? "center" : "left") : undefined,
@@ -106,6 +209,7 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
             fontSize: element.taglineFontSize || "12px",
             color: element.taglineColor || "#6b7280",
             lineHeight: "1.4",
+            fontFamily,
           }}
         >
           {element.tagline}
@@ -114,7 +218,7 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
     </div>
   );
 
-  const ctaBlock = element.showCta && element.ctaText ? (
+  const ctaBlock = showCta && element.ctaText ? (
     <span
       style={{
         display: "inline-block",
@@ -128,20 +232,21 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
         textDecoration: "none",
         marginLeft: "12px",
         whiteSpace: "nowrap",
+        fontFamily,
       }}
     >
       {element.ctaText}
     </span>
   ) : null;
 
-  // Determine layout
+  // Determine layout from resolved properties
   const isCentered = logoPosition === "center";
   const isNavBelow = navPosition === "below";
 
   return (
     <div onClick={onSelect} className="cursor-pointer rounded-lg">
       {/* Announcement Bar */}
-      {element.showAnnouncement && element.announcementText && (
+      {showAnnouncement && element.announcementText && (
         <div
           style={{
             backgroundColor: element.announcementBg || "#4F46E5",
@@ -160,9 +265,9 @@ export function HeaderBlock({ element, onSelect }: HeaderBlockProps) {
 
       <div
         style={{
-          backgroundColor: element.backgroundColor || "#ffffff",
+          backgroundColor: bgColor,
           padding: element.styles.padding || "16px 0",
-          borderBottom: element.borderBottom || undefined,
+          borderBottom: borderBottom || undefined,
         }}
       >
         {/* Preheader text */}

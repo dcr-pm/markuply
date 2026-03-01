@@ -332,14 +332,27 @@ function generateFooter(el: FooterElement): string {
 </table>`;
 }
 
+// Variant-based layout defaults for HTML generation (mirrors HeaderBlock component)
+const HEADER_VARIANT_DEFAULTS: Record<string, { logoPosition: string; navPosition: string; navStyle: string }> = {
+  "logo-nav": { logoPosition: "left", navPosition: "right", navStyle: "text" },
+  "logo-only": { logoPosition: "center", navPosition: "below", navStyle: "text" },
+  "centered": { logoPosition: "center", navPosition: "below", navStyle: "text" },
+  "full": { logoPosition: "left", navPosition: "right", navStyle: "text" },
+  "minimal": { logoPosition: "left", navPosition: "right", navStyle: "text" },
+  "bold": { logoPosition: "left", navPosition: "right", navStyle: "bold" },
+  "ecommerce": { logoPosition: "center", navPosition: "below", navStyle: "pills" },
+};
+
 function generateHeader(el: HeaderElement): string {
+  const variant = el.variant || "logo-nav";
+  const variantDefaults = HEADER_VARIANT_DEFAULTS[variant] || HEADER_VARIANT_DEFAULTS["logo-nav"];
   const bgColor = el.backgroundColor || "#ffffff";
   const textColor = el.textColor || "#374151";
   const navColor = el.navColor || textColor;
   const navFontSize = el.navFontSize || "13px";
-  const navStyle = el.navStyle || "text";
-  const logoPosition = el.logoPosition || "left";
-  const navPosition = el.navPosition || "right";
+  const navStyle = el.navStyle || variantDefaults.navStyle;
+  const logoPosition = variantDefaults.logoPosition;
+  const navPosition = variantDefaults.navPosition;
   const borderBottom = el.borderBottom || "";
   const fontFamily = el.styles.fontFamily || "Arial, sans-serif";
 
